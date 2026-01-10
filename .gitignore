@@ -1,0 +1,30 @@
+# 依赖
+node_modules/
+
+# 环境变量
+.env
+
+# 日志
+logs/
+*.log
+
+# 上传文件
+uploads/
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 构建输出
+dist/
+build/
+
+# 临时文件
+tmp/
+temp/
