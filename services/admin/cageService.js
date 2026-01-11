@@ -104,7 +104,7 @@ const getCageDetail = async (id) => {
 const createCage = async (data) => {
   try {
     const cage = await db.Cage.create(data);
-    logger.info(`Cage created: id=${cage.id}, name=${cage.name}`);
+    logger.info(`Cage created: id=${cage.id}, quantity=${cage.quantity}`);
     return cage;
   } catch (error) {
     logger.error('Create cage failed:', error);
@@ -206,7 +206,7 @@ const getReservationList = async (params) => {
         { 
           model: db.Cage, 
           as: 'cage',
-          attributes: ['id', 'name', 'quantity']
+          attributes: ['id', 'quantity']
         },
         { 
           model: db.User, 

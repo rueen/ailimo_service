@@ -295,7 +295,7 @@ const getMyOrders = async (userId, params) => {
       case 'cage':
         model = db.CageReservation;
         include = [
-          { model: db.Cage, as: 'cage', attributes: ['id', 'name'] },
+          { model: db.Cage, as: 'cage', attributes: ['id', 'quantity'] },
           { model: db.AnimalType, as: 'animalType', attributes: ['id', 'name'] },
           { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
           { model: db.CagePurpose, as: 'purpose', attributes: ['id', 'name'] },
