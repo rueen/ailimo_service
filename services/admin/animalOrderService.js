@@ -283,13 +283,32 @@ const cancelOrder = async (id) => {
 
 /**
  * 获取品牌列表
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
  */
-const getBrandList = async () => {
+const getBrandList = async (params) => {
   try {
-    return await db.AnimalBrand.findAll({ 
-      order: [['created_at', 'DESC']] 
+    const { page = 1, pageSize = 10, name } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+
+    const offset = (page - 1) * pageSize;
+    
+    const { count, rows } = await db.AnimalBrand.findAndCountAll({
+      where,
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
     });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
   } catch (error) {
     logger.error('Get animal brand list failed:', error);
     throw error;
@@ -377,19 +396,36 @@ const deleteBrand = async (id) => {
 
 /**
  * 获取品系列表
- * @param {Number} brandId - 品牌ID（可选）
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
  */
-const getVarietyList = async (brandId) => {
+const getVarietyList = async (params) => {
   try {
-    const where = brandId ? { brand_id: brandId } : {};
-    return await db.AnimalVariety.findAll({ 
+    const { page = 1, pageSize = 10, name, brandId } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+    if (brandId) where.brand_id = brandId;
+
+    const offset = (page - 1) * pageSize;
+    
+    const { count, rows } = await db.AnimalVariety.findAndCountAll({
       where,
       include: [
         { model: db.AnimalBrand, as: 'brand', attributes: ['id', 'name'] }
       ],
-      order: [['created_at', 'DESC']] 
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
     });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
   } catch (error) {
     logger.error('Get animal variety list failed:', error);
     throw error;
@@ -488,13 +524,32 @@ const deleteVariety = async (id) => {
 
 /**
  * 获取规格列表
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
  */
-const getSpecificationList = async () => {
+const getSpecificationList = async (params) => {
   try {
-    return await db.AnimalSpecification.findAll({ 
-      order: [['created_at', 'DESC']] 
+    const { page = 1, pageSize = 10, name } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+
+    const offset = (page - 1) * pageSize;
+    
+    const { count, rows } = await db.AnimalSpecification.findAndCountAll({
+      where,
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
     });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
   } catch (error) {
     logger.error('Get animal specification list failed:', error);
     throw error;
@@ -582,13 +637,32 @@ const deleteSpecification = async (id) => {
 
 /**
  * 获取需求列表
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
  */
-const getRequirementList = async () => {
+const getRequirementList = async (params) => {
   try {
-    return await db.AnimalRequirement.findAll({ 
-      order: [['created_at', 'DESC']] 
+    const { page = 1, pageSize = 10, name } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+
+    const offset = (page - 1) * pageSize;
+    
+    const { count, rows } = await db.AnimalRequirement.findAndCountAll({
+      where,
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
     });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
   } catch (error) {
     logger.error('Get animal requirement list failed:', error);
     throw error;

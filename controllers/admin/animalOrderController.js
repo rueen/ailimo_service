@@ -114,8 +114,13 @@ const cancelOrder = async (req, res, next) => {
  */
 const getBrandList = async (req, res, next) => {
   try {
-    const list = await animalOrderService.getBrandList();
-    return response.success(res, list);
+    const { page, pageSize, name } = req.query;
+    const result = await animalOrderService.getBrandList({
+      page,
+      pageSize,
+      name
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }
@@ -166,9 +171,14 @@ const deleteBrand = async (req, res, next) => {
  */
 const getVarietyList = async (req, res, next) => {
   try {
-    const { brandId } = req.query;
-    const list = await animalOrderService.getVarietyList(brandId);
-    return response.success(res, list);
+    const { page, pageSize, name, brandId } = req.query;
+    const result = await animalOrderService.getVarietyList({
+      page,
+      pageSize,
+      name,
+      brandId
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }
@@ -217,8 +227,13 @@ const deleteVariety = async (req, res, next) => {
  */
 const getSpecificationList = async (req, res, next) => {
   try {
-    const list = await animalOrderService.getSpecificationList();
-    return response.success(res, list);
+    const { page, pageSize, name } = req.query;
+    const result = await animalOrderService.getSpecificationList({
+      page,
+      pageSize,
+      name
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }
@@ -269,8 +284,13 @@ const deleteSpecification = async (req, res, next) => {
  */
 const getRequirementList = async (req, res, next) => {
   try {
-    const list = await animalOrderService.getRequirementList();
-    return response.success(res, list);
+    const { page, pageSize, name } = req.query;
+    const result = await animalOrderService.getRequirementList({
+      page,
+      pageSize,
+      name
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }
