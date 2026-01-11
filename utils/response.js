@@ -1,6 +1,7 @@
 /**
  * 统一响应格式工具
  */
+const { formatDatesInObject } = require('./dateFormat');
 
 /**
  * 成功响应
@@ -10,10 +11,13 @@
  * @param {Number} code - 状态码
  */
 const success = (res, data = null, message = 'success', code = 200) => {
+  // 格式化时间字段
+  const formattedData = data !== null && data !== undefined ? formatDatesInObject(data) : data;
+  
   return res.status(200).json({
     code,
     message,
-    data
+    data: formattedData
   });
 };
 
@@ -25,10 +29,13 @@ const success = (res, data = null, message = 'success', code = 200) => {
  * @param {*} data - 附加数据
  */
 const error = (res, message = '操作失败', code = 400, data = null) => {
+  // 格式化时间字段
+  const formattedData = data !== null && data !== undefined ? formatDatesInObject(data) : data;
+  
   return res.status(200).json({
     code,
     message,
-    data
+    data: formattedData
   });
 };
 
@@ -44,11 +51,14 @@ const error = (res, message = '操作失败', code = 400, data = null) => {
 const paginate = (res, list, total, page, pageSize, message = 'success') => {
   const totalPages = Math.ceil(total / pageSize);
   
+  // 格式化时间字段
+  const formattedList = formatDatesInObject(list);
+  
   return res.status(200).json({
     code: 200,
     message,
     data: {
-      list,
+      list: formattedList,
       total,
       page: parseInt(page),
       pageSize: parseInt(pageSize),
