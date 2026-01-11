@@ -114,8 +114,13 @@ const cancelOrder = async (req, res, next) => {
  */
 const getBrandList = async (req, res, next) => {
   try {
-    const list = await reagentOrderService.getBrandList();
-    return response.success(res, list);
+    const { page, pageSize, name } = req.query;
+    const result = await reagentOrderService.getBrandList({
+      page,
+      pageSize,
+      name
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }
@@ -166,8 +171,13 @@ const deleteBrand = async (req, res, next) => {
  */
 const getSpecificationList = async (req, res, next) => {
   try {
-    const list = await reagentOrderService.getSpecificationList();
-    return response.success(res, list);
+    const { page, pageSize, name } = req.query;
+    const result = await reagentOrderService.getSpecificationList({
+      page,
+      pageSize,
+      name
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }

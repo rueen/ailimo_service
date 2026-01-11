@@ -267,13 +267,32 @@ const cancelOrder = async (id) => {
 
 /**
  * 获取品牌列表
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
  */
-const getBrandList = async () => {
+const getBrandList = async (params) => {
   try {
-    return await db.ReagentBrand.findAll({ 
-      order: [['created_at', 'DESC']] 
+    const { page = 1, pageSize = 10, name } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+
+    const offset = (page - 1) * pageSize;
+    
+    const { count, rows } = await db.ReagentBrand.findAndCountAll({
+      where,
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
     });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
   } catch (error) {
     logger.error('Get reagent brand list failed:', error);
     throw error;
@@ -361,13 +380,32 @@ const deleteBrand = async (id) => {
 
 /**
  * 获取规格列表
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
  */
-const getSpecificationList = async () => {
+const getSpecificationList = async (params) => {
   try {
-    return await db.ReagentSpecification.findAll({ 
-      order: [['created_at', 'DESC']] 
+    const { page = 1, pageSize = 10, name } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+
+    const offset = (page - 1) * pageSize;
+    
+    const { count, rows } = await db.ReagentSpecification.findAndCountAll({
+      where,
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
     });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
   } catch (error) {
     logger.error('Get reagent specification list failed:', error);
     throw error;
