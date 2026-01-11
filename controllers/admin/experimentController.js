@@ -191,7 +191,19 @@ const getTimeSlotList = async (req, res, next) => {
  */
 const createTimeSlot = async (req, res, next) => {
   try {
-    const timeSlot = await experimentService.createTimeSlot(req.body);
+    const { startTime, endTime, description, sortOrder } = req.body;
+    
+    // 参数验证
+    if (!startTime || !endTime) {
+      return response.badRequest(res, '开始时间和结束时间不能为空');
+    }
+
+    const timeSlot = await experimentService.createTimeSlot({
+      start_time: startTime,
+      end_time: endTime,
+      description,
+      sort_order: sortOrder
+    });
     return response.success(res, timeSlot, '创建成功');
   } catch (err) {
     next(err);

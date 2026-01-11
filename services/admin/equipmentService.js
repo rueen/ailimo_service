@@ -506,6 +506,12 @@ const getTimeSlotList = async () => {
 const createTimeSlot = async (data) => {
   try {
     const { startTime, endTime, description, sortOrder } = data;
+    
+    // 参数验证
+    if (!startTime || !endTime) {
+      throw new Error('开始时间和结束时间不能为空');
+    }
+
     const slot = await db.EquipmentTimeSlot.create({
       start_time: startTime,
       end_time: endTime,

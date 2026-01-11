@@ -801,6 +801,11 @@ const getTimeSlotList = async (onlyActive = true) => {
  */
 const createTimeSlot = async (data) => {
   try {
+    // 参数验证
+    if (!data.start_time || !data.end_time) {
+      throw new Error('开始时间和结束时间不能为空');
+    }
+
     // 检查时间段是否重复
     const existing = await db.CageTimeSlot.findOne({
       where: {
