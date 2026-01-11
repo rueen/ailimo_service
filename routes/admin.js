@@ -23,6 +23,27 @@ router.get('/auth/profile', adminAuth, authController.getProfile);
 router.put('/auth/password', adminAuth, authController.changePassword);
 router.post('/auth/logout', adminAuth, authController.logout);
 
+// ==================== 管理员管理 ====================
+router.get('/administrators', adminAuth, permission('administrator:list'), authController.getAdministratorList);
+router.get('/administrators/options', adminAuth, authController.getAdministratorOptions);
+router.get('/administrators/:id', adminAuth, permission('administrator:detail'), authController.getAdministratorDetail);
+router.post('/administrators', adminAuth, permission('administrator:create'), authController.createAdministrator);
+router.put('/administrators/:id', adminAuth, permission('administrator:update'), authController.updateAdministrator);
+router.delete('/administrators/:id', adminAuth, permission('administrator:delete'), authController.deleteAdministrator);
+
+// ==================== 角色管理 ====================
+router.get('/roles', adminAuth, permission('role:list'), authController.getRoleList);
+router.get('/roles/:id', adminAuth, permission('role:detail'), authController.getRoleDetail);
+router.post('/roles', adminAuth, permission('role:create'), authController.createRole);
+router.put('/roles/:id', adminAuth, permission('role:update'), authController.updateRole);
+router.delete('/roles/:id', adminAuth, permission('role:delete'), authController.deleteRole);
+
+// ==================== 权限管理 ====================
+router.get('/permissions', adminAuth, permission('permission:list'), authController.getPermissionList);
+router.post('/permissions', adminAuth, permission('permission:create'), authController.createPermission);
+router.put('/permissions/:id', adminAuth, permission('permission:update'), authController.updatePermission);
+router.delete('/permissions/:id', adminAuth, permission('permission:delete'), authController.deletePermission);
+
 // ==================== 用户管理 ====================
 router.get('/users', adminAuth, permission('user:list'), userController.getUserList);
 router.get('/users/:id', adminAuth, permission('user:detail'), userController.getUserDetail);
