@@ -243,17 +243,17 @@ const getRoleDetail = async (req, res, next) => {
  */
 const createRole = async (req, res, next) => {
   try {
-    const { name, description, permissionIds } = req.body;
+    const { name, description, permission_ids } = req.body;
     
     // 参数验证
-    if (!name || !permissionIds || !Array.isArray(permissionIds)) {
+    if (!name || !permission_ids || !Array.isArray(permission_ids)) {
       return response.badRequest(res, '角色名称和权限ID数组不能为空');
     }
 
     const role = await authService.createRole({
       name,
       description,
-      permissionIds
+      permissionIds: permission_ids  // 转换为服务层使用的命名
     });
     return response.success(res, role, '创建成功');
   } catch (err) {
@@ -267,12 +267,12 @@ const createRole = async (req, res, next) => {
 const updateRole = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description, permissionIds } = req.body;
+    const { name, description, permission_ids } = req.body;
 
     await authService.updateRole(id, {
       name,
       description,
-      permissionIds
+      permissionIds: permission_ids  // 转换为服务层使用的命名
     });
     return response.success(res, null, '更新成功');
   } catch (err) {
