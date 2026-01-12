@@ -283,8 +283,8 @@ const createTimeSlot = async (req, res, next) => {
  */
 const updateTimeSlot = async (req, res, next) => {
   try {
-    await cageService.updateTimeSlot(req.params.id, req.body);
-    return response.success(res, null, '更新成功');
+    const timeSlot = await cageService.updateTimeSlot(req.params.id, req.body);
+    return response.success(res, timeSlot, '更新成功');
   } catch (err) {
     next(err);
   }

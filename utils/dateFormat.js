@@ -24,6 +24,23 @@ const formatDate = (date) => {
 };
 
 /**
+ * 格式化时间段显示格式（HH:mm-HH:mm）
+ * @param {String} startTime - 开始时间（HH:mm:ss 或 HH:mm）
+ * @param {String} endTime - 结束时间（HH:mm:ss 或 HH:mm）
+ * @returns {String}
+ */
+const formatTimeSlot = (startTime, endTime) => {
+  if (!startTime || !endTime) return '';
+  // 提取小时和分钟（去掉秒）
+  const start = startTime.substring(0, 5);
+  const end = endTime.substring(0, 5);
+  // 去掉小时部分的前导零（9:00 而不是 09:00），但保留分钟部分
+  const startFormatted = start.replace(/^0(\d:)/, '$1');
+  const endFormatted = end.replace(/^0(\d:)/, '$1');
+  return `${startFormatted}-${endFormatted}`;
+};
+
+/**
  * 判断是否为日期字符串（ISO格式或类似格式）
  * @param {*} value - 值
  * @returns {Boolean}
@@ -95,5 +112,6 @@ const formatDatesInObject = (data) => {
 module.exports = {
   formatDateTime,
   formatDate,
+  formatTimeSlot,
   formatDatesInObject
 };

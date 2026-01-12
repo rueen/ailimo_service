@@ -506,9 +506,17 @@ const getCompanyInfo = async () => {
  */
 const getEquipmentTimeSlots = async () => {
   try {
-    return await db.EquipmentTimeSlot.findAll({
+    const slots = await db.EquipmentTimeSlot.findAll({
       where: { status: 1 },
       order: [['sort_order', 'ASC']]
+    });
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
     });
   } catch (error) {
     logger.error('Get equipment time slots failed:', error);
@@ -522,9 +530,17 @@ const getEquipmentTimeSlots = async () => {
  */
 const getCageTimeSlots = async () => {
   try {
-    return await db.CageTimeSlot.findAll({
+    const slots = await db.CageTimeSlot.findAll({
       where: { status: 1 },
       order: [['sort_order', 'ASC']]
+    });
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
     });
   } catch (error) {
     logger.error('Get cage time slots failed:', error);
@@ -538,9 +554,17 @@ const getCageTimeSlots = async () => {
  */
 const getExperimentTimeSlots = async () => {
   try {
-    return await db.ExperimentTimeSlot.findAll({
+    const slots = await db.ExperimentTimeSlot.findAll({
       where: { status: 1 },
       order: [['sort_order', 'ASC']]
+    });
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
     });
   } catch (error) {
     logger.error('Get experiment time slots failed:', error);

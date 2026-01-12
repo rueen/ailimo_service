@@ -491,7 +491,14 @@ const getTimeSlotList = async () => {
       where: { status: 1 },
       order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
     });
-    return slots;
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
+    });
   } catch (err) {
     logger.error(`Get equipment time slot list failed: ${err.message}`);
     throw err;
@@ -519,7 +526,12 @@ const createTimeSlot = async (data) => {
       sort_order: sortOrder
     });
     logger.info(`Equipment time slot created`);
-    return slot;
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    const slotData = slot.toJSON();
+    slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+    return slotData;
   } catch (err) {
     logger.error(`Create equipment time slot failed: ${err.message}`);
     throw err;
@@ -548,6 +560,15 @@ const updateTimeSlot = async (id, data) => {
 
     await slot.update(updateData);
     logger.info(`Equipment time slot updated: id=${id}`);
+    
+    // 重新加载数据以获取更新后的值
+    await slot.reload();
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    const slotData = slot.toJSON();
+    slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+    return slotData;
   } catch (err) {
     logger.error(`Update equipment time slot failed: ${err.message}`);
     throw err;
@@ -582,8 +603,16 @@ const getTimeSlotOptions = async () => {
   try {
     const slots = await db.EquipmentTimeSlot.findAll({
       where: { status: 1 }, // 仅返回启用的时间段
-      attributes: ['id', 'start_time', 'end_time', 'description', 'sort_order'],
+      attributes: ['id', 'start_time', 'end_time', 'description', 'sort_order', 'status'],
       order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
+    });
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
     });
     return slots;
   } catch (err) {

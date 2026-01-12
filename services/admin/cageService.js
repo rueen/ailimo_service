@@ -784,9 +784,17 @@ const getPurposeOptions = async () => {
 const getTimeSlotList = async (onlyActive = true) => {
   try {
     const where = onlyActive ? { status: 1 } : {};
-    return await db.CageTimeSlot.findAll({
+    const slots = await db.CageTimeSlot.findAll({
       where,
       order: [['sort_order', 'ASC']]
+    });
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
     });
   } catch (error) {
     logger.error('Get cage time slot list failed:', error);
@@ -819,7 +827,12 @@ const createTimeSlot = async (data) => {
 
     const timeSlot = await db.CageTimeSlot.create(data);
     logger.info(`Cage time slot created: id=${timeSlot.id}`);
-    return timeSlot;
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    const slotData = timeSlot.toJSON();
+    slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+    return slotData;
   } catch (error) {
     logger.error('Create cage time slot failed:', error);
     throw error;
@@ -858,6 +871,15 @@ const updateTimeSlot = async (id, data) => {
 
     await timeSlot.update(data);
     logger.info(`Cage time slot updated: id=${id}`);
+    
+    // 重新加载数据以获取更新后的值
+    await timeSlot.reload();
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    const slotData = timeSlot.toJSON();
+    slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+    return slotData;
   } catch (error) {
     logger.error(`Update cage time slot failed: id=${id}`, error);
     throw error;
@@ -892,10 +914,17 @@ const getTimeSlotOptions = async () => {
   try {
     const slots = await db.CageTimeSlot.findAll({
       where: { status: 1 }, // 仅返回启用的时间段
-      attributes: ['id', 'start_time', 'end_time', 'description', 'sort_order'],
+      attributes: ['id', 'start_time', 'end_time', 'description', 'sort_order', 'status'],
       order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
     });
-    return slots;
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
+    });
   } catch (error) {
     logger.error('Get cage time slot options failed:', error);
     throw error;

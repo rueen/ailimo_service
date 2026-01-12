@@ -440,9 +440,17 @@ const getOperationContentOptions = async () => {
 const getTimeSlotList = async (onlyActive = true) => {
   try {
     const where = onlyActive ? { status: 1 } : {};
-    return await db.ExperimentTimeSlot.findAll({
+    const slots = await db.ExperimentTimeSlot.findAll({
       where,
       order: [['sort_order', 'ASC']]
+    });
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
     });
   } catch (error) {
     logger.error('Get experiment time slot list failed:', error);
@@ -475,7 +483,12 @@ const createTimeSlot = async (data) => {
 
     const timeSlot = await db.ExperimentTimeSlot.create(data);
     logger.info(`Experiment time slot created: id=${timeSlot.id}`);
-    return timeSlot;
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    const slotData = timeSlot.toJSON();
+    slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+    return slotData;
   } catch (error) {
     logger.error('Create experiment time slot failed:', error);
     throw error;
@@ -514,6 +527,15 @@ const updateTimeSlot = async (id, data) => {
 
     await timeSlot.update(data);
     logger.info(`Experiment time slot updated: id=${id}`);
+    
+    // 重新加载数据以获取更新后的值
+    await timeSlot.reload();
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    const slotData = timeSlot.toJSON();
+    slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+    return slotData;
   } catch (error) {
     logger.error(`Update experiment time slot failed: id=${id}`, error);
     throw error;
@@ -548,10 +570,17 @@ const getTimeSlotOptions = async () => {
   try {
     const slots = await db.ExperimentTimeSlot.findAll({
       where: { status: 1 }, // 仅返回启用的时间段
-      attributes: ['id', 'start_time', 'end_time', 'description', 'sort_order'],
+      attributes: ['id', 'start_time', 'end_time', 'description', 'sort_order', 'status'],
       order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
     });
-    return slots;
+    
+    // 添加 display_time 字段
+    const { formatTimeSlot } = require('../../utils/dateFormat');
+    return slots.map(slot => {
+      const slotData = slot.toJSON();
+      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
+      return slotData;
+    });
   } catch (error) {
     logger.error('Get experiment time slot options failed:', error);
     throw error;
