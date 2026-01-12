@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2026-01-09 14:06:42
+ * @LastEditors: diaochan
+ * @LastEditTime: 2026-01-12 18:54:28
+ * @Description: 
+ */
 /**
  * 配置入口文件
  * 统一导出所有配置
@@ -29,7 +36,7 @@ module.exports = {
   // 限流配置
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'), // 60秒
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100')      // 最多100次请求
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '200')      // 最多100次请求
   },
   
   // 数据库配置
