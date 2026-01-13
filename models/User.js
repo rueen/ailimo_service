@@ -22,17 +22,17 @@ module.exports = (sequelize) => {
       unique: true,
       comment: '手机号'
     },
-    province: {
-      type: DataTypes.STRING(50),
-      comment: '省份'
+    province_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      comment: '省份ID'
     },
-    city: {
-      type: DataTypes.STRING(50),
-      comment: '城市'
+    city_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      comment: '城市ID'
     },
-    district: {
-      type: DataTypes.STRING(50),
-      comment: '区县'
+    district_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      comment: '区县ID'
     },
     address: {
       type: DataTypes.STRING(200),

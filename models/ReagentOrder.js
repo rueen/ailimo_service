@@ -46,20 +46,20 @@ module.exports = (sequelize) => {
       allowNull: false,
       comment: '到货日期'
     },
-    province: {
-      type: DataTypes.STRING(50),
+    province_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      comment: '省份'
+      comment: '省份ID'
     },
-    city: {
-      type: DataTypes.STRING(50),
+    city_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      comment: '城市'
+      comment: '城市ID'
     },
-    district: {
-      type: DataTypes.STRING(50),
+    district_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      comment: '区县'
+      comment: '区县ID'
     },
     address: {
       type: DataTypes.STRING(200),
