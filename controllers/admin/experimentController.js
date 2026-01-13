@@ -114,8 +114,13 @@ const cancelOperation = async (req, res, next) => {
  */
 const getOperationContentList = async (req, res, next) => {
   try {
-    const list = await experimentService.getOperationContentList();
-    return response.success(res, list);
+    const { page, pageSize, name } = req.query;
+    const result = await experimentService.getOperationContentList({
+      page,
+      pageSize,
+      name
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }

@@ -182,8 +182,13 @@ const cancelReservation = async (req, res, next) => {
  */
 const getPurposeList = async (req, res, next) => {
   try {
-    const list = await cageService.getPurposeList();
-    return response.success(res, list);
+    const { page, pageSize, name } = req.query;
+    const result = await cageService.getPurposeList({
+      page,
+      pageSize,
+      name
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }

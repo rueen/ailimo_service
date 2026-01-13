@@ -318,13 +318,31 @@ const cancelOperation = async (id) => {
 
 /**
  * 获取操作内容列表
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
  */
-const getOperationContentList = async () => {
+const getOperationContentList = async (params) => {
   try {
-    return await db.OperationContent.findAll({ 
-      order: [['created_at', 'DESC']] 
+    const { page = 1, pageSize = 10, name } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+
+    const offset = (page - 1) * pageSize;
+    const { count, rows } = await db.OperationContent.findAndCountAll({
+      where,
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
     });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
   } catch (error) {
     logger.error('Get operation content list failed:', error);
     throw error;

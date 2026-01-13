@@ -662,13 +662,31 @@ const checkCageAvailability = async (
 
 /**
  * 获取用途列表
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
  */
-const getPurposeList = async () => {
+const getPurposeList = async (params) => {
   try {
-    return await db.CagePurpose.findAll({ 
-      order: [['created_at', 'DESC']] 
+    const { page = 1, pageSize = 10, name } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+
+    const offset = (page - 1) * pageSize;
+    const { count, rows } = await db.CagePurpose.findAndCountAll({
+      where,
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
     });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
   } catch (error) {
     logger.error('Get cage purpose list failed:', error);
     throw error;
