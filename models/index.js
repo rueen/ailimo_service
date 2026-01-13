@@ -82,6 +82,9 @@ db.Region = require('./Region')(sequelize);
 db.User.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'organization' });
 db.User.belongsTo(db.ResearchGroup, { foreignKey: 'research_group_id', as: 'researchGroup' });
 db.User.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.User.belongsTo(db.Region, { foreignKey: 'province_id', as: 'province' });
+db.User.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });
+db.User.belongsTo(db.Region, { foreignKey: 'district_id', as: 'district' });
 
 db.ResearchGroup.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'organization' });
 
@@ -138,6 +141,9 @@ db.AnimalOrder.belongsTo(db.EnvironmentType, { foreignKey: 'environment_id', as:
 db.AnimalOrder.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.AnimalOrder.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
 db.AnimalOrder.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.AnimalOrder.belongsTo(db.Region, { foreignKey: 'province_id', as: 'province' });
+db.AnimalOrder.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });
+db.AnimalOrder.belongsTo(db.Region, { foreignKey: 'district_id', as: 'district' });
 
 // 试剂耗材关联
 db.ReagentOrder.belongsTo(db.ReagentBrand, { foreignKey: 'brand_id', as: 'brand' });
@@ -145,5 +151,8 @@ db.ReagentOrder.belongsTo(db.ReagentSpecification, { foreignKey: 'specification_
 db.ReagentOrder.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.ReagentOrder.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
 db.ReagentOrder.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.ReagentOrder.belongsTo(db.Region, { foreignKey: 'province_id', as: 'province' });
+db.ReagentOrder.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });
+db.ReagentOrder.belongsTo(db.Region, { foreignKey: 'district_id', as: 'district' });
 
 module.exports = db;

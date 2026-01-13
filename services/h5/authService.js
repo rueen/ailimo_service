@@ -2,7 +2,7 @@
  * 用户端认证服务
  */
 const db = require('../../models');
-const { jwt, sms } = require('../../utils');
+const { jwt, sms, validator } = require('../../utils');
 const config = require('../../config');
 const logger = require('../../config/logger');
 const { Op } = require('sequelize');
@@ -134,7 +134,7 @@ const login = async (phone, code) => {
  */
 const register = async (userData) => {
   try {
-    const { name, phone, code, organizationId, researchGroupId, province, city, district, address } = userData;
+    const { name, phone, code, organizationId, researchGroupId, province_id, city_id, district_id, address } = userData;
 
     // 查询最新的验证码记录
     const smsCode = await db.SmsCode.findOne({
@@ -158,6 +158,14 @@ const register = async (userData) => {
       throw new Error('该手机号已注册');
     }
 
+    // 验证地区ID（可选）
+    if (province_id || city_id || district_id) {
+      const regionValidation = await validator.validateRegionIdsOptional(province_id, city_id, district_id);
+      if (!regionValidation.valid) {
+        throw new Error(regionValidation.message);
+      }
+    }
+
     // 标记验证码已使用
     await smsCode.update({ is_used: 1 });
 
@@ -167,9 +175,9 @@ const register = async (userData) => {
       phone,
       organization_id: organizationId,
       research_group_id: researchGroupId,
-      province,
-      city,
-      district,
+      province_id,
+      city_id,
+      district_id,
       address,
       status: 1,
       audit_status: 0 // 待审核
@@ -197,7 +205,10 @@ const getProfile = async (userId) => {
       attributes: { exclude: ['audit_by'] },
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
-        { model: db.ResearchGroup, as: 'researchGroup', attributes: ['id', 'name'] }
+        { model: db.ResearchGroup, as: 'researchGroup', attributes: ['id', 'name'] },
+        { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }
       ]
     });
 

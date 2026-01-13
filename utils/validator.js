@@ -1,26 +1,7 @@
 /**
  * 数据验证工具
  */
-
-/**
- * 验证手机号
- * @param {String} phone - 手机号
- * @returns {Boolean}
- */
-const isValidPhone = (phone) => {
-  const phoneReg = /^1[3-9]\d{9}$/;
-  return phoneReg.test(phone);
-};
-
-/**
- * 验证邮箱
- * @param {String} email - 邮箱
- * @returns {Boolean}
- */
-const isValidEmail = (email) => {
-  const emailReg = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return emailReg.test(email);
-};
+const db = require('../models');
 
 /**
  * 验证密码格式（6-20位，包含字母和数字）
@@ -28,124 +9,112 @@ const isValidEmail = (email) => {
  * @returns {Boolean}
  */
 const isValidPassword = (password) => {
-  const passwordReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/;
-  return passwordReg.test(password);
-};
-
-/**
- * 验证验证码（6位数字）
- * @param {String} code - 验证码
- * @returns {Boolean}
- */
-const isValidCode = (code) => {
-  const codeReg = /^\d{6}$/;
-  return codeReg.test(code);
-};
-
-/**
- * 验证日期格式（YYYY-MM-DD）
- * @param {String} date - 日期
- * @returns {Boolean}
- */
-const isValidDate = (date) => {
-  const dateReg = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateReg.test(date)) return false;
-  
-  // 验证日期是否有效
-  const d = new Date(date);
-  return d instanceof Date && !isNaN(d) && d.toISOString().slice(0, 10) === date;
-};
-
-/**
- * 验证时间格式（HH:mm 或 HH:mm:ss）
- * @param {String} time - 时间
- * @returns {Boolean}
- */
-const isValidTime = (time) => {
-  const timeReg = /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/;
-  return timeReg.test(time);
-};
-
-/**
- * 验证URL格式
- * @param {String} url - URL
- * @returns {Boolean}
- */
-const isValidUrl = (url) => {
-  try {
-    new URL(url);
-    return true;
-  } catch (err) {
+  if (!password || password.length < 6 || password.length > 20) {
     return false;
   }
+  // 必须包含字母和数字
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  return hasLetter && hasNumber;
 };
 
 /**
- * 验证是否为正整数
- * @param {*} value - 值
+ * 验证手机号格式
+ * @param {String} phone - 手机号
  * @returns {Boolean}
  */
-const isPositiveInteger = (value) => {
-  const num = Number(value);
-  return Number.isInteger(num) && num > 0;
+const isValidPhone = (phone) => {
+  return /^1[3-9]\d{9}$/.test(phone);
 };
 
 /**
- * 验证是否为非负整数
- * @param {*} value - 值
- * @returns {Boolean}
+ * 验证地区ID是否存在
+ * @param {Number} provinceId - 省份ID
+ * @param {Number} cityId - 城市ID
+ * @param {Number} districtId - 区县ID
+ * @returns {Promise<Object>} - { valid: boolean, message: string, regions: object }
  */
-const isNonNegativeInteger = (value) => {
-  const num = Number(value);
-  return Number.isInteger(num) && num >= 0;
-};
+const validateRegionIds = async (provinceId, cityId, districtId) => {
+  try {
+    // 1. 验证省份
+    if (!provinceId) {
+      return { valid: false, message: '省份ID不能为空' };
+    }
 
-/**
- * 清理XSS危险字符
- * @param {String} str - 字符串
- * @returns {String}
- */
-const sanitizeHtml = (str) => {
-  if (typeof str !== 'string') return str;
-  
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;',
-    '/': '&#x2F;'
-  };
-  
-  return str.replace(/[&<>"'/]/g, (char) => map[char]);
-};
+    const province = await db.Region.findOne({
+      where: { id: provinceId, level: 1, status: 1 }
+    });
 
-/**
- * 验证express-validator错误
- * @param {Object} req - Express请求对象
- * @returns {Array|null} 错误数组或null
- */
-const validationResult = (req) => {
-  const { validationResult } = require('express-validator');
-  const errors = validationResult(req);
-  
-  if (!errors.isEmpty()) {
-    return errors.array();
+    if (!province) {
+      return { valid: false, message: '省份ID不存在或已禁用' };
+    }
+
+    // 2. 验证城市
+    if (!cityId) {
+      return { valid: false, message: '城市ID不能为空' };
+    }
+
+    const city = await db.Region.findOne({
+      where: { id: cityId, level: 2, parent_id: provinceId, status: 1 }
+    });
+
+    if (!city) {
+      return { valid: false, message: '城市ID不存在、已禁用或不属于该省份' };
+    }
+
+    // 3. 验证区县
+    if (!districtId) {
+      return { valid: false, message: '区县ID不能为空' };
+    }
+
+    const district = await db.Region.findOne({
+      where: { id: districtId, level: 3, parent_id: cityId, status: 1 }
+    });
+
+    if (!district) {
+      return { valid: false, message: '区县ID不存在、已禁用或不属于该城市' };
+    }
+
+    // 返回验证通过及地区信息
+    return {
+      valid: true,
+      message: '地区验证通过',
+      regions: {
+        province,
+        city,
+        district
+      }
+    };
+  } catch (error) {
+    return { valid: false, message: `地区验证失败: ${error.message}` };
   }
-  
-  return null;
+};
+
+/**
+ * 验证省市区ID（可选字段，如果有就验证）
+ * @param {Number} provinceId - 省份ID（可选）
+ * @param {Number} cityId - 城市ID（可选）
+ * @param {Number} districtId - 区县ID（可选）
+ * @returns {Promise<Object>}
+ */
+const validateRegionIdsOptional = async (provinceId, cityId, districtId) => {
+  // 如果都没有，直接通过
+  if (!provinceId && !cityId && !districtId) {
+    return { valid: true, message: '未提供地区信息' };
+  }
+
+  // 如果提供了任意一个，就必须三个都提供
+  if (!provinceId || !cityId || !districtId) {
+    return { valid: false, message: '省市区必须同时提供或同时不提供' };
+  }
+
+  // 验证地区ID
+  return await validateRegionIds(provinceId, cityId, districtId);
 };
 
 module.exports = {
-  isValidPhone,
-  isValidEmail,
   isValidPassword,
-  isValidCode,
-  isValidDate,
-  isValidTime,
-  isValidUrl,
-  isPositiveInteger,
-  isNonNegativeInteger,
-  sanitizeHtml,
-  validationResult
+  isValidPhone,
+  validateRegionIds,
+  validateRegionIdsOptional
 };

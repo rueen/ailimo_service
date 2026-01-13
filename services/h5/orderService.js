@@ -3,6 +3,7 @@
  * 包括：设备租赁、笼位租赁、实验代操作、动物订购、试剂耗材订购、案例、公司信息
  */
 const db = require('../../models');
+const { validator } = require('../../utils');
 const logger = require('../../config/logger');
 const { Op } = require('sequelize');
 
@@ -229,6 +230,12 @@ const createExperimentOperation = async (userId, data) => {
  */
 const createAnimalOrder = async (userId, data) => {
   try {
+    // 验证地区ID
+    const regionValidation = await validator.validateRegionIds(data.province_id, data.city_id, data.district_id);
+    if (!regionValidation.valid) {
+      throw new Error(regionValidation.message);
+    }
+
     const order = await db.AnimalOrder.create({
       ...data,
       user_id: userId,
@@ -253,6 +260,12 @@ const createAnimalOrder = async (userId, data) => {
  */
 const createReagentOrder = async (userId, data) => {
   try {
+    // 验证地区ID
+    const regionValidation = await validator.validateRegionIds(data.province_id, data.city_id, data.district_id);
+    if (!regionValidation.valid) {
+      throw new Error(regionValidation.message);
+    }
+
     const order = await db.ReagentOrder.create({
       ...data,
       user_id: userId,
