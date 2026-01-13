@@ -1,3 +1,10 @@
+/*
+ * @Author: diaochan
+ * @Date: 2026-01-09 14:08:24
+ * @LastEditors: diaochan
+ * @LastEditTime: 2026-01-13 16:28:18
+ * @Description: 
+ */
 /**
  * 限流中间件
  */
@@ -33,7 +40,7 @@ const createRateLimit = (options = {}) => {
  */
 const apiLimiter = createRateLimit({
   windowMs: 60 * 1000,  // 1分钟
-  max: 100              // 最多100次请求
+  max: 200              // 最多200次请求
 });
 
 /**
