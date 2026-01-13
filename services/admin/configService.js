@@ -11,7 +11,7 @@ const logger = require('../../config/logger');
 const getAllConfigs = async () => {
   try {
     return await db.SystemConfig.findAll({
-      order: [['key', 'ASC']]
+      order: [['config_key', 'ASC']]
     });
   } catch (error) {
     logger.error('Get all configs failed:', error);
@@ -26,7 +26,7 @@ const getAllConfigs = async () => {
  */
 const getConfig = async (key) => {
   try {
-    const config = await db.SystemConfig.findOne({ where: { key } });
+    const config = await db.SystemConfig.findOne({ where: { config_key: key } });
     if (!config) {
       throw new Error('配置项不存在');
     }
@@ -45,12 +45,12 @@ const getConfig = async (key) => {
  */
 const updateConfig = async (key, value) => {
   try {
-    const config = await db.SystemConfig.findOne({ where: { key } });
+    const config = await db.SystemConfig.findOne({ where: { config_key: key } });
     if (!config) {
       throw new Error('配置项不存在');
     }
 
-    await config.update({ value });
+    await config.update({ config_value: value });
     logger.info(`Config updated: key=${key}, value=${value}`);
   } catch (error) {
     logger.error(`Update config failed: key=${key}`, error);
@@ -66,13 +66,13 @@ const getAdvanceDaysConfigs = async () => {
   try {
     const configs = await db.SystemConfig.findAll({
       where: {
-        key: ['equipment_advance_days', 'cage_advance_days', 'experiment_advance_days']
+        config_key: ['equipment_advance_days', 'cage_advance_days', 'experiment_advance_days']
       }
     });
 
     const result = {};
     configs.forEach(config => {
-      result[config.key] = parseInt(config.value) || 7;
+      result[config.config_key] = parseInt(config.config_value) || 7;
     });
 
     return {
