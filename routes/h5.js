@@ -9,6 +9,7 @@ const { h5Auth, smsLimiter } = require('../middlewares');
 // 控制器
 const authController = require('../controllers/h5/authController');
 const orderController = require('../controllers/h5/orderController');
+const regionController = require('../controllers/common/regionController');
 
 // ==================== 认证相关 ====================
 router.post('/auth/send-code', smsLimiter, authController.sendCode);
@@ -16,6 +17,11 @@ router.post('/auth/login', authController.login);
 router.post('/auth/register', authController.register);
 router.get('/auth/profile', h5Auth, authController.getProfile);
 router.post('/auth/logout', h5Auth, authController.logout);
+
+// ==================== 地区管理（公共） ====================
+router.get('/regions', regionController.getRegionList);
+router.get('/regions/tree', regionController.getRegionTree);
+router.get('/regions/:id', regionController.getRegionById);
 
 // ==================== 订单提交 ====================
 router.post('/equipment-orders', h5Auth, orderController.createEquipmentReservation);

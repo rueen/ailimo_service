@@ -16,6 +16,7 @@ const animalOrderController = require('../controllers/admin/animalOrderControlle
 const reagentOrderController = require('../controllers/admin/reagentOrderController');
 const contentController = require('../controllers/admin/contentController');
 const configController = require('../controllers/admin/configController');
+const regionController = require('../controllers/common/regionController');
 
 // ==================== 认证相关 ====================
 router.post('/auth/login', loginLimiter, authController.login);
@@ -250,6 +251,11 @@ router.get('/system-configs', adminAuth, configController.getAllConfigs);
 router.get('/system-configs/:key', adminAuth, configController.getConfig);
 router.put('/system-configs/:key', adminAuth, permission('system_config:update'), configController.updateConfig);
 router.get('/advance-days', adminAuth, configController.getAdvanceDaysConfigs);
+
+// ==================== 地区管理（公共） ====================
+router.get('/regions', adminAuth, regionController.getRegionList);
+router.get('/regions/tree', adminAuth, regionController.getRegionTree);
+router.get('/regions/:id', adminAuth, regionController.getRegionById);
 
 // ==================== 文件上传 ====================
 router.post('/upload/image', adminAuth, uploadSingle('file'), async (req, res, next) => {

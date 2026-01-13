@@ -74,6 +74,7 @@ db.Case = require('./Case')(sequelize);
 db.CompanyInfo = require('./CompanyInfo')(sequelize);
 db.SystemConfig = require('./SystemConfig')(sequelize);
 db.SmsCode = require('./SmsCode')(sequelize);
+db.Region = require('./Region')(sequelize);
 
 // ==================== 建立模型关联关系 ====================
 
