@@ -35,13 +35,13 @@ const getConfig = async (req, res, next) => {
 const updateConfig = async (req, res, next) => {
   try {
     const { key } = req.params;
-    const { value } = req.body;
+    const { config_value } = req.body;
     
-    if (value === undefined || value === null) {
+    if (config_value === undefined || config_value === null) {
       return response.badRequest(res, '配置值不能为空');
     }
 
-    await configService.updateConfig(key, value);
+    await configService.updateConfig(key, config_value);
     return response.success(res, null, '更新成功');
   } catch (err) {
     next(err);
