@@ -124,8 +124,16 @@ const createAdministrator = async (req, res, next) => {
     const { username, password, remark, roleId } = req.body;
     
     // 参数验证
-    if (!username || !password || !roleId) {
-      return response.badRequest(res, '用户名、密码和角色ID不能为空');
+    if (!username) {
+      return response.badRequest(res, '用户名不能为空');
+    }
+
+    if (!password) {
+      return response.badRequest(res, '密码不能为空');
+    }
+
+    if (!roleId) {
+      return response.badRequest(res, '角色ID不能为空');
     }
 
     // 验证用户名格式（3-20位字母数字下划线）
@@ -143,7 +151,8 @@ const createAdministrator = async (req, res, next) => {
       username,
       password,
       remark,
-      roleId
+      roleId,
+      status: req.body.status !== undefined ? req.body.status : 1
     });
     return response.success(res, admin, '创建成功');
   } catch (err) {

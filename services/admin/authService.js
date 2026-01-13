@@ -239,7 +239,7 @@ const getAdministratorDetail = async (id) => {
  */
 const createAdministrator = async (data) => {
   try {
-    const { username, password, remark, roleId } = data;
+    const { username, password, remark, roleId, status = 1 } = data;
 
     // 验证用户名是否已存在
     const existing = await db.Administrator.findOne({ where: { username } });
@@ -262,10 +262,10 @@ const createAdministrator = async (data) => {
       password: hashedPassword,
       remark: remark || null,
       role_id: roleId,
-      status: 1
+      status: status
     });
 
-    logger.info(`Administrator created: id=${admin.id}, username=${username}`);
+    logger.info(`Administrator created: id=${admin.id}, username=${username}, status=${status}`);
     return admin;
   } catch (err) {
     logger.error(`Create administrator failed: ${err.message}`);
