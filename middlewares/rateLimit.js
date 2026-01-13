@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2026-01-09 14:08:24
  * @LastEditors: diaochan
- * @LastEditTime: 2026-01-13 16:28:18
+ * @LastEditTime: 2026-01-13 16:57:42
  * @Description: 
  */
 /**
@@ -40,7 +40,7 @@ const createRateLimit = (options = {}) => {
  */
 const apiLimiter = createRateLimit({
   windowMs: 60 * 1000,  // 1分钟
-  max: 200              // 最多200次请求
+  max: 300              // 最多300次请求
 });
 
 /**

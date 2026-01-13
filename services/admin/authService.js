@@ -615,11 +615,11 @@ const buildPermissionTree = (permissions, parentId = 0) => {
       code: p.code,
       resource: p.resource,
       method: p.method,
-      parentId: p.parent_id,
-      sortOrder: p.sort_order,
+      parent_id: p.parent_id,
+      sort_order: p.sort_order,
       children: buildPermissionTree(permissions, p.id)
     }))
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+    .sort((a, b) => a.sort_order - b.sort_order);
 };
 
 /**

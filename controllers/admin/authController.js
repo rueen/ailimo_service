@@ -321,11 +321,14 @@ const getPermissionList = async (req, res, next) => {
  */
 const createPermission = async (req, res, next) => {
   try {
-    const { name, code, resource, method, parentId, sortOrder } = req.body;
+    const { name, code, resource, method, parent_id, sort_order } = req.body;
     
     // 参数验证
-    if (!name || !code || !resource || !method) {
-      return response.badRequest(res, '权限名称、代码、资源路径和请求方法不能为空');
+    if (!name) {
+      return response.badRequest(res, '权限名称不能为空');
+    }
+    if (!code) {
+      return response.badRequest(res, '代码不能为空');
     }
 
     const permission = await authService.createPermission({
@@ -333,8 +336,8 @@ const createPermission = async (req, res, next) => {
       code,
       resource,
       method,
-      parentId: parentId || 0,
-      sortOrder: sortOrder || 0
+      parentId: parent_id || 0,
+      sortOrder: sort_order || 0
     });
     return response.success(res, permission, '创建成功');
   } catch (err) {
@@ -348,15 +351,15 @@ const createPermission = async (req, res, next) => {
 const updatePermission = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, code, resource, method, parentId, sortOrder } = req.body;
+    const { name, code, resource, method, parent_id, sort_order } = req.body;
 
     await authService.updatePermission(id, {
       name,
       code,
       resource,
       method,
-      parentId,
-      sortOrder
+      parentId: parent_id,
+      sortOrder: sort_order
     });
     return response.success(res, null, '更新成功');
   } catch (err) {
