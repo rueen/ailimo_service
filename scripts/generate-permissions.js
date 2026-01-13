@@ -16,16 +16,11 @@ const logger = require('../config/logger');
  * 定义父级权限和子权限的映射关系
  */
 const PERMISSION_GROUPS = {
-  // 系统管理
-  'system': {
-    name: '系统管理',
-    code: 'system',
-    children: [
-      { code: 'administrator', name: '管理员管理' },
-      { code: 'role', name: '角色管理' },
-      { code: 'permission', name: '权限管理' },
-      { code: 'system_config', name: '系统配置' }
-    ]
+  // 工作台
+  'dashboard': {
+    name: '工作台',
+    code: 'dashboard',
+    children: []
   },
   // 用户管理
   'user': {
@@ -80,9 +75,9 @@ const PERMISSION_GROUPS = {
       { code: 'animal_requirement', name: '动物需求' }
     ]
   },
-  // 试剂耗材
+  // 试剂耗材订购
   'reagent': {
-    name: '试剂耗材',
+    name: '试剂耗材订购',
     code: 'reagent',
     children: [
       { code: 'reagent_order', name: '试剂订单' },
@@ -96,10 +91,28 @@ const PERMISSION_GROUPS = {
     code: 'content',
     children: [
       { code: 'case', name: '案例管理' },
-      { code: 'company_info', name: '公司信息' },
+      { code: 'company_info', name: '公司信息' }
+    ]
+  },
+  // 通用配置管理
+  'config': {
+    name: '通用配置管理',
+    code: 'config',
+    children: [
       { code: 'handler', name: '负责人管理' },
       { code: 'environment_type', name: '环境类型' },
       { code: 'animal_type', name: '动物类型' }
+    ]
+  },
+  // 系统管理
+  'system': {
+    name: '系统管理',
+    code: 'system',
+    children: [
+      { code: 'administrator', name: '管理员管理' },
+      { code: 'role', name: '角色管理' },
+      { code: 'permission', name: '权限管理' },
+      { code: 'system_config', name: '系统配置' }
     ]
   }
 };
@@ -131,6 +144,18 @@ const METHOD_MAP = {
 };
 
 /**
+ * 手动定义的权限列表（用于路由文件中没有但需要创建的权限）
+ */
+const MANUAL_PERMISSIONS = [
+  {
+    code: 'dashboard:view',
+    method: 'GET',
+    path: '/api/support/dashboard',
+    name: '工作台查看'
+  }
+];
+
+/**
  * 解析路由文件，提取权限信息
  */
 function parseRoutes() {
@@ -160,6 +185,14 @@ function parseRoutes() {
       name: generatePermissionName(code)
     });
   }
+  
+  // 添加手动定义的权限（如果路由文件中没有）
+  const existingCodes = new Set(permissions.map(p => p.code));
+  MANUAL_PERMISSIONS.forEach(perm => {
+    if (!existingCodes.has(perm.code)) {
+      permissions.push(perm);
+    }
+  });
   
   return permissions;
 }
@@ -359,6 +392,16 @@ async function createPermissions() {
           },
           transaction
         });
+        
+        // 如果权限已存在，但 parent_id 不正确，需要更新
+        if (!created && permission.parent_id !== 0) {
+          await permission.update({
+            parent_id: 0,
+            sort_order: perm.sortOrder
+          }, { transaction });
+          logger.info(`更新一级权限的父级: ${perm.name} (${perm.code})`);
+        }
+        
         permissionIdMap.set(perm.code, permission.id);
         if (created) {
           logger.info(`创建一级权限: ${perm.name} (${perm.code})`);
@@ -369,6 +412,14 @@ async function createPermissions() {
       
       // 插入二级权限
       for (const perm of level2) {
+        // 检查该权限是否已经作为一级权限存在
+        const existingAsLevel1 = permissionIdMap.get(perm.code);
+        if (existingAsLevel1) {
+          // 如果已经作为一级权限存在，跳过（避免将一级权限降级为二级权限）
+          logger.info(`跳过：${perm.name} (${perm.code}) 已作为一级权限存在`);
+          continue;
+        }
+        
         const parentId = permissionIdMap.get(perm.parentId);
         if (!parentId) {
           logger.warn(`找不到父级权限: ${perm.parentId}`);
@@ -387,6 +438,16 @@ async function createPermissions() {
           },
           transaction
         });
+        
+        // 如果权限已存在，但 parent_id 不正确，需要更新
+        if (!created && permission.parent_id !== parentId) {
+          await permission.update({
+            parent_id: parentId,
+            sort_order: perm.sortOrder
+          }, { transaction });
+          logger.info(`更新二级权限的父级: ${perm.name} (${perm.code})`);
+        }
+        
         permissionIdMap.set(perm.code, permission.id);
         if (created) {
           logger.info(`创建二级权限: ${perm.name} (${perm.code})`);
@@ -415,6 +476,16 @@ async function createPermissions() {
           },
           transaction
         });
+        
+        // 如果权限已存在，但 parent_id 不正确，需要更新
+        if (!created && permission.parent_id !== parentId) {
+          await permission.update({
+            parent_id: parentId,
+            sort_order: perm.sortOrder
+          }, { transaction });
+          logger.info(`更新三级权限的父级: ${perm.name} (${perm.code})`);
+        }
+        
         if (created) {
           logger.info(`创建三级权限: ${perm.name} (${perm.code})`);
         } else {
