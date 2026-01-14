@@ -4,6 +4,7 @@
 const db = require('../../models');
 const logger = require('../../config/logger');
 const { Op } = require('sequelize');
+const { validator } = require('../../utils');
 
 /**
  * 获取用户列表
@@ -103,6 +104,18 @@ const createUser = async (userData, adminId) => {
       }
     }
 
+    // 验证地区ID（可选）
+    if (userData.province_id || userData.city_id || userData.district_id) {
+      const regionValidation = await validator.validateRegionIdsOptional(
+        userData.province_id,
+        userData.city_id,
+        userData.district_id
+      );
+      if (!regionValidation.valid) {
+        throw new Error(regionValidation.message);
+      }
+    }
+
     // 如果未传入审核状态，管理端创建的用户默认审核通过
     const auditStatus = userData.audit_status !== undefined ? userData.audit_status : 1;
     
@@ -168,6 +181,24 @@ const updateUser = async (userId, userData) => {
       const group = await db.ResearchGroup.findByPk(userData.research_group_id);
       if (!group) {
         throw new Error('课题组不存在');
+      }
+    }
+
+    // 验证地区ID（如果提供了）
+    if (userData.province_id !== undefined || userData.city_id !== undefined || userData.district_id !== undefined) {
+      // 如果提供了任意一个地区字段，必须三个都提供
+      if (!userData.province_id || !userData.city_id || !userData.district_id) {
+        throw new Error('省市区必须同时提供或同时不提供');
+      }
+      
+      // 验证地区ID的有效性和层级关系
+      const regionValidation = await validator.validateRegionIds(
+        userData.province_id,
+        userData.city_id,
+        userData.district_id
+      );
+      if (!regionValidation.valid) {
+        throw new Error(regionValidation.message);
       }
     }
 
