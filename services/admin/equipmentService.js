@@ -548,8 +548,8 @@ const cancelReservation = async (id) => {
  */
 const getTimeSlotList = async () => {
   try {
+    // 返回所有时间段配置（包括启用和禁用的）
     const slots = await db.EquipmentTimeSlot.findAll({
-      where: { status: 1 },
       order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
     });
     
@@ -573,18 +573,18 @@ const getTimeSlotList = async () => {
  */
 const createTimeSlot = async (data) => {
   try {
-    const { startTime, endTime, description, sortOrder } = data;
+    const { start_time, end_time, description, sort_order } = data;
     
     // 参数验证
-    if (!startTime || !endTime) {
+    if (!start_time || !end_time) {
       throw new Error('开始时间和结束时间不能为空');
     }
 
     const slot = await db.EquipmentTimeSlot.create({
-      start_time: startTime,
-      end_time: endTime,
+      start_time,
+      end_time,
       description,
-      sort_order: sortOrder
+      sort_order
     });
     logger.info(`Equipment time slot created`);
     
@@ -613,11 +613,11 @@ const updateTimeSlot = async (id, data) => {
     }
 
     const updateData = {};
-    if (data.startTime !== undefined) updateData.start_time = data.startTime;
-    if (data.endTime !== undefined) updateData.end_time = data.endTime;
+    if (data.start_time !== undefined) updateData.start_time = data.start_time;
+    if (data.end_time !== undefined) updateData.end_time = data.end_time;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.sortOrder !== undefined) updateData.sort_order = data.sortOrder;
+    if (data.sort_order !== undefined) updateData.sort_order = data.sort_order;
 
     await slot.update(updateData);
     logger.info(`Equipment time slot updated: id=${id}`);

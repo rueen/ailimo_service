@@ -210,13 +210,13 @@ const getTimeSlotList = async (req, res, next) => {
  */
 const createTimeSlot = async (req, res, next) => {
   try {
-    const { startTime, endTime, description, sortOrder } = req.body;
+    const { start_time, end_time, description, sort_order } = req.body;
 
-    if (!startTime || !endTime) {
+    if (!start_time || !end_time) {
       return response.badRequest(res, '开始时间和结束时间不能为空');
     }
 
-    const slot = await equipmentService.createTimeSlot({ startTime, endTime, description, sortOrder });
+    const slot = await equipmentService.createTimeSlot({ start_time, end_time, description, sort_order });
     return response.success(res, slot, '创建成功');
   } catch (err) {
     next(err);
