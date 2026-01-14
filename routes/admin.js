@@ -92,6 +92,7 @@ router.get('/equipment-time-slots/options', adminAuth, equipmentController.getTi
 router.post('/equipment-time-slots', adminAuth, permission('equipment_time_slot:create'), equipmentController.createTimeSlot);
 router.put('/equipment-time-slots/:id', adminAuth, permission('equipment_time_slot:update'), equipmentController.updateTimeSlot);
 router.delete('/equipment-time-slots/:id', adminAuth, permission('equipment_time_slot:delete'), equipmentController.deleteTimeSlot);
+router.get('/equipment/:id/available-slots', adminAuth, equipmentController.getAvailableSlots);
 router.get('/equipment-available-slots', adminAuth, equipmentController.getAvailableSlots);
 
 // ==================== 笼位租赁 ====================

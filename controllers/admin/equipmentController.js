@@ -268,7 +268,9 @@ const getTimeSlotOptions = async (req, res, next) => {
  */
 const getAvailableSlots = async (req, res, next) => {
   try {
-    const { equipmentId, date } = req.query;
+    // 支持路径参数和查询参数两种方式
+    const equipmentId = req.params.id || req.query.equipmentId;
+    const date = req.query.date;
 
     if (!equipmentId || !date) {
       return response.badRequest(res, '设备ID和日期不能为空');
