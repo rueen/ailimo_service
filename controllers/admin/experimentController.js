@@ -65,12 +65,12 @@ const updateOperation = async (req, res, next) => {
  */
 const auditOperation = async (req, res, next) => {
   try {
-    const { status, rejectReason, handlerId } = req.body;
+    const { status, reject_reason, handler_id } = req.body;
     await experimentService.auditOperation(
       req.params.id, 
       Number(status), 
-      rejectReason, 
-      handlerId, 
+      reject_reason, 
+      handler_id, 
       req.userId
     );
     return response.success(

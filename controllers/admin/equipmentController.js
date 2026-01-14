@@ -149,14 +149,14 @@ const updateReservation = async (req, res, next) => {
 const auditReservation = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, rejectReason, handlerId } = req.body;
+    const { status, reject_reason, handler_id } = req.body;
     const adminId = req.userId;
 
     if (!status || ![1, 2].includes(Number(status))) {
       return response.badRequest(res, '审核状态不正确');
     }
 
-    await equipmentService.auditReservation(id, Number(status), rejectReason, handlerId, adminId);
+    await equipmentService.auditReservation(id, Number(status), reject_reason, handler_id, adminId);
     
     const message = status == 1 ? '审核通过' : '审核拒绝';
     return response.success(res, null, message);

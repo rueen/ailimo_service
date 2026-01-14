@@ -134,7 +134,7 @@ const login = async (phone, code) => {
  */
 const register = async (userData) => {
   try {
-    const { name, phone, code, organizationId, researchGroupId, province_id, city_id, district_id, address } = userData;
+    const { name, phone, code, organization_id, research_group_id, province_id, city_id, district_id, address } = userData;
 
     // 查询最新的验证码记录
     const smsCode = await db.SmsCode.findOne({
@@ -173,8 +173,8 @@ const register = async (userData) => {
     const user = await db.User.create({
       name,
       phone,
-      organization_id: organizationId,
-      research_group_id: researchGroupId,
+      organization_id,
+      research_group_id,
       province_id,
       city_id,
       district_id,

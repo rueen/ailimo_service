@@ -303,8 +303,8 @@ const getOrganizationList = async (req, res, next) => {
  */
 const getResearchGroupList = async (req, res, next) => {
   try {
-    const { organizationId } = req.query;
-    const list = await orderService.getResearchGroupList(organizationId);
+    const { organization_id } = req.query;
+    const list = await orderService.getResearchGroupList(organization_id);
     return response.success(res, list);
   } catch (err) {
     next(err);

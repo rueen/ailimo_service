@@ -133,12 +133,12 @@ const updateReservation = async (req, res, next) => {
  */
 const auditReservation = async (req, res, next) => {
   try {
-    const { status, rejectReason, handlerId } = req.body;
+    const { status, reject_reason, handler_id } = req.body;
     await cageService.auditReservation(
       req.params.id, 
       Number(status), 
-      rejectReason, 
-      handlerId, 
+      reject_reason, 
+      handler_id, 
       req.userId
     );
     return response.success(

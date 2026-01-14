@@ -61,16 +61,16 @@ const updateUser = async (req, res, next) => {
 const auditUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { auditStatus, rejectReason } = req.body;
+    const { status, reject_reason } = req.body;
     const adminId = req.userId;
 
-    if (!auditStatus || ![1, 2].includes(Number(auditStatus))) {
+    if (!status || ![1, 2].includes(Number(status))) {
       return response.badRequest(res, '审核状态不正确');
     }
 
-    await userService.auditUser(id, Number(auditStatus), rejectReason, adminId);
+    await userService.auditUser(id, Number(status), reject_reason, adminId);
     
-    const message = auditStatus == 1 ? '审核通过' : '审核拒绝';
+    const message = status == 1 ? '审核通过' : '审核拒绝';
     return response.success(res, null, message);
   } catch (err) {
     next(err);
@@ -192,13 +192,13 @@ const getResearchGroupList = async (req, res, next) => {
  */
 const createResearchGroup = async (req, res, next) => {
   try {
-    const { name, organizationId } = req.body;
+    const { name, organization_id } = req.body;
 
-    if (!name || !organizationId) {
+    if (!name || !organization_id) {
       return response.badRequest(res, '课题组名称和组织机构不能为空');
     }
 
-    const group = await userService.createResearchGroup(name, organizationId);
+    const group = await userService.createResearchGroup(name, organization_id);
     return response.success(res, group, '创建成功');
   } catch (err) {
     next(err);
@@ -211,13 +211,13 @@ const createResearchGroup = async (req, res, next) => {
 const updateResearchGroup = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, organizationId } = req.body;
+    const { name, organization_id } = req.body;
 
-    if (!name || !organizationId) {
+    if (!name || !organization_id) {
       return response.badRequest(res, '课题组名称和组织机构不能为空');
     }
 
-    await userService.updateResearchGroup(id, name, organizationId);
+    await userService.updateResearchGroup(id, name, organization_id);
     return response.success(res, null, '更新成功');
   } catch (err) {
     next(err);
@@ -254,8 +254,8 @@ const getOrganizationOptions = async (req, res, next) => {
  */
 const getResearchGroupOptions = async (req, res, next) => {
   try {
-    const { organizationId } = req.query;
-    const groups = await userService.getResearchGroupOptions(organizationId);
+    const { organization_id } = req.query;
+    const groups = await userService.getResearchGroupOptions(organization_id);
     return response.success(res, groups);
   } catch (err) {
     next(err);
