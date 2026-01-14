@@ -84,7 +84,7 @@ const login = async (phone, code) => {
       where: { phone },
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
-        { model: db.ResearchGroup, as: 'researchGroup', attributes: ['id', 'name'] }
+        { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] }
       ]
     });
 
@@ -116,7 +116,7 @@ const login = async (phone, code) => {
         name: user.name,
         phone: user.phone,
         organization: user.organization,
-        researchGroup: user.researchGroup,
+        research_group: user.research_group,
         status: user.status,
         auditStatus: user.audit_status
       }
@@ -205,7 +205,7 @@ const getProfile = async (userId) => {
       attributes: { exclude: ['audit_by'] },
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
-        { model: db.ResearchGroup, as: 'researchGroup', attributes: ['id', 'name'] },
+        { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] },
         { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
         { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
         { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }

@@ -80,7 +80,7 @@ db.Region = require('./Region')(sequelize);
 
 // 用户相关关联
 db.User.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'organization' });
-db.User.belongsTo(db.ResearchGroup, { foreignKey: 'research_group_id', as: 'researchGroup' });
+db.User.belongsTo(db.ResearchGroup, { foreignKey: 'research_group_id', as: 'research_group' });
 db.User.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
 db.User.belongsTo(db.Region, { foreignKey: 'province_id', as: 'province' });
 db.User.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });

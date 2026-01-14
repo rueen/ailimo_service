@@ -27,7 +27,7 @@ const getUserList = async (params) => {
       where,
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
-        { model: db.ResearchGroup, as: 'researchGroup', attributes: ['id', 'name'] },
+        { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] },
         { model: db.Administrator, as: 'auditor', attributes: ['id', 'username'] }
       ],
       offset,
@@ -57,7 +57,7 @@ const getUserDetail = async (userId) => {
     const user = await db.User.findByPk(userId, {
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
-        { model: db.ResearchGroup, as: 'researchGroup', attributes: ['id', 'name'] },
+        { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] },
         { model: db.Administrator, as: 'auditor', attributes: ['id', 'username'] }
       ]
     });
@@ -103,16 +103,25 @@ const createUser = async (userData, adminId) => {
       }
     }
 
-    // 管理端创建的用户默认审核通过
-    const user = await db.User.create({
+    // 如果未传入审核状态，管理端创建的用户默认审核通过
+    const auditStatus = userData.audit_status !== undefined ? userData.audit_status : 1;
+    
+    // 构建创建数据
+    const createData = {
       ...userData,
-      audit_status: 1,
-      audit_time: new Date(),
-      audit_by: adminId,
-      status: 1
-    });
+      audit_status: auditStatus,
+      status: userData.status !== undefined ? userData.status : 1
+    };
+    
+    // 如果审核状态为1（审核通过），记录审核时间和审核人
+    if (auditStatus === 1) {
+      createData.audit_time = new Date();
+      createData.audit_by = adminId;
+    }
 
-    logger.info(`User created by admin: userId=${user.id}, by=${adminId}`);
+    const user = await db.User.create(createData);
+
+    logger.info(`User created by admin: userId=${user.id}, auditStatus=${auditStatus}, by=${adminId}`);
     return user;
   } catch (err) {
     logger.error(`Create user failed: ${err.message}`);
