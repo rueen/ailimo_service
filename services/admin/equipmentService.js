@@ -145,16 +145,48 @@ const getEquipmentOptions = async () => {
  */
 const getReservationList = async (params) => {
   try {
-    const { page = 1, pageSize = 10, equipment_id, user_id, status, start_date, end_date } = params;
+    const { 
+      page = 1, 
+      pageSize = 10, 
+      equipment_id, 
+      equipment_name,
+      user_id, 
+      user_name,
+      user_phone,
+      status,
+      reservation_date,
+      start_date, 
+      end_date 
+    } = params;
     
     const where = {};
     if (equipment_id) where.equipment_id = equipment_id;
     if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
-    if (start_date && end_date) {
+    
+    // 日期筛选：支持单日期精确查询或日期范围查询
+    if (reservation_date) {
+      // 精确匹配某个日期
+      where.reservation_date = reservation_date;
+    } else if (start_date && end_date) {
+      // 日期范围查询
       where.reservation_date = {
         [Op.between]: [start_date, end_date]
       };
+    }
+
+    // 构建关联查询的 where 条件
+    const equipmentWhere = {};
+    if (equipment_name) {
+      equipmentWhere.name = { [Op.like]: `%${equipment_name}%` };
+    }
+
+    const userWhere = {};
+    if (user_name) {
+      userWhere.name = { [Op.like]: `%${user_name}%` };
+    }
+    if (user_phone) {
+      userWhere.phone = { [Op.like]: `%${user_phone}%` };
     }
 
     const offset = (page - 1) * pageSize;
@@ -162,8 +194,20 @@ const getReservationList = async (params) => {
     const { count, rows } = await db.EquipmentReservation.findAndCountAll({
       where,
       include: [
-        { model: db.Equipment, as: 'equipment', attributes: ['id', 'name'] },
-        { model: db.User, as: 'user', attributes: ['id', 'name', 'phone'] },
+        { 
+          model: db.Equipment, 
+          as: 'equipment', 
+          attributes: ['id', 'name'],
+          where: Object.keys(equipmentWhere).length > 0 ? equipmentWhere : undefined,
+          required: Object.keys(equipmentWhere).length > 0
+        },
+        { 
+          model: db.User, 
+          as: 'user', 
+          attributes: ['id', 'name', 'phone'],
+          where: Object.keys(userWhere).length > 0 ? userWhere : undefined,
+          required: Object.keys(userWhere).length > 0
+        },
         { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
         { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
       ],
@@ -172,8 +216,18 @@ const getReservationList = async (params) => {
       order: [['created_at', 'DESC']]
     });
 
+    // 转换 auditBy 为 audit_by
+    const list = rows.map(reservation => {
+      const data = reservation.toJSON();
+      if (data.auditBy) {
+        data.audit_by = data.auditBy;
+        delete data.auditBy;
+      }
+      return data;
+    });
+
     return {
-      list: rows,
+      list,
       total: count,
       page: parseInt(page),
       pageSize: parseInt(pageSize)
@@ -204,7 +258,14 @@ const getReservationDetail = async (id) => {
       throw new Error('订单不存在');
     }
 
-    return reservation;
+    // 转换 auditBy 为 audit_by
+    const data = reservation.toJSON();
+    if (data.auditBy) {
+      data.audit_by = data.auditBy;
+      delete data.auditBy;
+    }
+
+    return data;
   } catch (err) {
     logger.error(`Get equipment reservation detail failed: ${err.message}`);
     throw err;
@@ -660,6 +721,7 @@ const getAvailableSlots = async (equipmentId, date) => {
         id: slot.id,
         startTime: slot.start_time,
         endTime: slot.end_time,
+        display_time: slotStr,
         description: slot.description,
         available: !bookedSlots.includes(slotStr)
       };
