@@ -827,12 +827,12 @@ const getOrganizationList = async () => {
 
 /**
  * 获取课题组列表
- * @param {Number} organizationId - 组织ID（可选）
+ * @param {Number} organization_id - 组织ID（可选）
  * @returns {Promise<Array>}
  */
-const getResearchGroupList = async (organizationId) => {
+const getResearchGroupList = async (organization_id) => {
   try {
-    const where = organizationId ? { organization_id: organizationId } : {};
+    const where = organization_id ? { organization_id: organization_id } : {};
     return await db.ResearchGroup.findAll({
       where,
       include: [

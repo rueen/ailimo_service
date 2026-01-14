@@ -17,25 +17,25 @@ const getOperationList = async (params) => {
     const { 
       page = 1, 
       pageSize = 10, 
-      userId, 
+      user_id, 
       status,
-      operationContentId,
-      animalTypeId,
-      startDate,
-      endDate
+      operation_content_id,
+      animal_type_id,
+      start_date,
+      end_date
     } = params;
     
     const where = {};
-    if (userId) where.user_id = userId;
+    if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
-    if (operationContentId) where.operation_content_id = operationContentId;
-    if (animalTypeId) where.animal_type_id = animalTypeId;
-    if (startDate && endDate) {
+    if (operation_content_id) where.operation_content_id = operation_content_id;
+    if (animal_type_id) where.animal_type_id = animal_type_id;
+    if (start_date && end_date) {
       where.operation_date = {
-        [Op.between]: [startDate, endDate]
+        [Op.between]: [start_date, end_date]
       };
-    } else if (startDate) {
-      where.operation_date = { [Op.gte]: startDate };
+    } else if (start_date) {
+      where.operation_date = { [Op.gte]: start_date };
     } else if (endDate) {
       where.operation_date = { [Op.lte]: endDate };
     }

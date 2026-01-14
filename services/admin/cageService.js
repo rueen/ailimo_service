@@ -174,29 +174,29 @@ const getReservationList = async (params) => {
     const { 
       page = 1, 
       pageSize = 10, 
-      cageId, 
-      userId, 
+      cage_id, 
+      user_id, 
       status,
-      startDate,
-      endDate,
-      animalTypeId,
-      environmentId
+      start_date,
+      end_date,
+      animal_type_id,
+      environment_id
     } = params;
     
     const where = {};
-    if (cageId) where.cage_id = cageId;
-    if (userId) where.user_id = userId;
+    if (cage_id) where.cage_id = cage_id;
+    if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
-    if (animalTypeId) where.animal_type_id = animalTypeId;
-    if (environmentId) where.environment_id = environmentId;
-    if (startDate && endDate) {
+    if (animal_type_id) where.animal_type_id = animal_type_id;
+    if (environment_id) where.environment_id = environment_id;
+    if (start_date && end_date) {
       where.reservation_date = {
-        [Op.between]: [startDate, endDate]
+        [Op.between]: [start_date, end_date]
       };
-    } else if (startDate) {
-      where.reservation_date = { [Op.gte]: startDate };
-    } else if (endDate) {
-      where.reservation_date = { [Op.lte]: endDate };
+    } else if (start_date) {
+      where.reservation_date = { [Op.gte]: start_date };
+    } else if (end_date) {
+      where.reservation_date = { [Op.lte]: end_date };
     }
 
     const offset = (page - 1) * pageSize;

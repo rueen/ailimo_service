@@ -17,24 +17,24 @@ const getOrderList = async (params) => {
     const { 
       page = 1, 
       pageSize = 10, 
-      userId, 
+      user_id, 
       status,
-      brandId,
-      startDate,
-      endDate,
+      brand_id,
+      start_date,
+      end_date,
       keyword
     } = params;
     
     const where = {};
-    if (userId) where.user_id = userId;
+    if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
-    if (brandId) where.brand_id = brandId;
+    if (brand_id) where.brand_id = brand_id;
     if (keyword) {
       where.name = { [Op.like]: `%${keyword}%` };
     }
-    if (startDate && endDate) {
+    if (start_date && end_date) {
       where.delivery_date = {
-        [Op.between]: [startDate, endDate]
+        [Op.between]: [start_date, end_date]
       };
     } else if (startDate) {
       where.delivery_date = { [Op.gte]: startDate };

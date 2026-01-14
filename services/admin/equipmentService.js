@@ -145,15 +145,15 @@ const getEquipmentOptions = async () => {
  */
 const getReservationList = async (params) => {
   try {
-    const { page = 1, pageSize = 10, equipmentId, userId, status, startDate, endDate } = params;
+    const { page = 1, pageSize = 10, equipment_id, user_id, status, start_date, end_date } = params;
     
     const where = {};
-    if (equipmentId) where.equipment_id = equipmentId;
-    if (userId) where.user_id = userId;
+    if (equipment_id) where.equipment_id = equipment_id;
+    if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
-    if (startDate && endDate) {
+    if (start_date && end_date) {
       where.reservation_date = {
-        [Op.between]: [startDate, endDate]
+        [Op.between]: [start_date, end_date]
       };
     }
 

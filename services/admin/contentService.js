@@ -303,13 +303,13 @@ const getHandlerOptions = async () => {
 
 /**
  * 获取负责人完成订单统计
- * @param {Number} handlerId - 负责人ID（可选）
+ * @param {Number} handler_id - 负责人ID（可选）
  * @returns {Promise<Array>}
  */
-const getHandlerStatistics = async (handlerId) => {
+const getHandlerStatistics = async (handler_id) => {
   try {
-    const handlers = handlerId 
-      ? [await db.Handler.findByPk(handlerId)]
+    const handlers = handler_id 
+      ? [await db.Handler.findByPk(handler_id)]
       : await db.Handler.findAll();
 
     if (!handlers || handlers.length === 0) {

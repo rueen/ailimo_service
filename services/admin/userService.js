@@ -13,13 +13,13 @@ const { validator } = require('../../utils');
  */
 const getUserList = async (params) => {
   try {
-    const { page = 1, pageSize = 10, name, phone, organizationId, auditStatus, status } = params;
+    const { page = 1, pageSize = 10, name, phone, organization_id, audit_status, status } = params;
     
     const where = {};
     if (name) where.name = { [Op.like]: `%${name}%` };
     if (phone) where.phone = { [Op.like]: `%${phone}%` };
-    if (organizationId) where.organization_id = organizationId;
-    if (auditStatus !== undefined) where.audit_status = auditStatus;
+    if (organization_id) where.organization_id = organization_id;
+    if (audit_status !== undefined) where.audit_status = audit_status;
     if (status !== undefined) where.status = status;
 
     const offset = (page - 1) * pageSize;
@@ -420,11 +420,11 @@ const deleteOrganization = async (id) => {
  */
 const getResearchGroupList = async (params) => {
   try {
-    const { page = 1, pageSize = 10, name, organizationId } = params;
+    const { page = 1, pageSize = 10, name, organization_id } = params;
     
     const where = {};
     if (name) where.name = { [Op.like]: `%${name}%` };
-    if (organizationId) where.organization_id = organizationId;
+    if (organization_id) where.organization_id = organization_id;
 
     const offset = (page - 1) * pageSize;
     
