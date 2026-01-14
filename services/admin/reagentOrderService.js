@@ -68,7 +68,7 @@ const getOrderList = async (params) => {
         },
         {
           model: db.Administrator,
-          as: 'auditor',
+          as: 'auditBy',
           attributes: ['id', 'username', 'remark']
         }
       ],
@@ -102,7 +102,7 @@ const getOrderDetail = async (id) => {
         { model: db.ReagentSpecification, as: 'specification' },
         { model: db.User, as: 'user' },
         { model: db.Handler, as: 'handler' },
-        { model: db.Administrator, as: 'auditor' }
+        { model: db.Administrator, as: 'auditBy' }
       ]
     });
 

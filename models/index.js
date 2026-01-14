@@ -81,7 +81,7 @@ db.Region = require('./Region')(sequelize);
 // 用户相关关联
 db.User.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'organization' });
 db.User.belongsTo(db.ResearchGroup, { foreignKey: 'research_group_id', as: 'research_group' });
-db.User.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.User.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 db.User.belongsTo(db.Region, { foreignKey: 'province_id', as: 'province' });
 db.User.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });
 db.User.belongsTo(db.Region, { foreignKey: 'district_id', as: 'district' });
@@ -109,7 +109,7 @@ db.Permission.belongsToMany(db.Role, {
 db.EquipmentReservation.belongsTo(db.Equipment, { foreignKey: 'equipment_id', as: 'equipment' });
 db.EquipmentReservation.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.EquipmentReservation.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
-db.EquipmentReservation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.EquipmentReservation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 
 // 笼位租赁关联
 db.Cage.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animalType' });
@@ -121,14 +121,14 @@ db.CageReservation.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 
 db.CageReservation.belongsTo(db.EnvironmentType, { foreignKey: 'environment_id', as: 'environment' });
 db.CageReservation.belongsTo(db.CagePurpose, { foreignKey: 'purpose_id', as: 'purpose' });
 db.CageReservation.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
-db.CageReservation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.CageReservation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 
 // 实验代操作关联
 db.ExperimentOperation.belongsTo(db.OperationContent, { foreignKey: 'operation_content_id', as: 'operationContent' });
 db.ExperimentOperation.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animalType' });
 db.ExperimentOperation.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.ExperimentOperation.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
-db.ExperimentOperation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.ExperimentOperation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 
 // 动物订购关联
 db.AnimalVariety.belongsTo(db.AnimalBrand, { foreignKey: 'brand_id', as: 'brand' });
@@ -140,7 +140,7 @@ db.AnimalOrder.belongsTo(db.AnimalRequirement, { foreignKey: 'requirement_id', a
 db.AnimalOrder.belongsTo(db.EnvironmentType, { foreignKey: 'environment_id', as: 'environment' });
 db.AnimalOrder.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.AnimalOrder.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
-db.AnimalOrder.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.AnimalOrder.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 db.AnimalOrder.belongsTo(db.Region, { foreignKey: 'province_id', as: 'province' });
 db.AnimalOrder.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });
 db.AnimalOrder.belongsTo(db.Region, { foreignKey: 'district_id', as: 'district' });
@@ -150,7 +150,7 @@ db.ReagentOrder.belongsTo(db.ReagentBrand, { foreignKey: 'brand_id', as: 'brand'
 db.ReagentOrder.belongsTo(db.ReagentSpecification, { foreignKey: 'specification_id', as: 'specification' });
 db.ReagentOrder.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.ReagentOrder.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
-db.ReagentOrder.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditor' });
+db.ReagentOrder.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 db.ReagentOrder.belongsTo(db.Region, { foreignKey: 'province_id', as: 'province' });
 db.ReagentOrder.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });
 db.ReagentOrder.belongsTo(db.Region, { foreignKey: 'district_id', as: 'district' });

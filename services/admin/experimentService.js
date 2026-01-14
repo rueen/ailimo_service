@@ -66,7 +66,7 @@ const getOperationList = async (params) => {
         },
         {
           model: db.Administrator,
-          as: 'auditor',
+          as: 'auditBy',
           attributes: ['id', 'username', 'remark']
         }
       ],
@@ -114,7 +114,7 @@ const getOperationDetail = async (id) => {
         },
         {
           model: db.Administrator,
-          as: 'auditor'
+          as: 'auditBy'
         }
       ]
     });

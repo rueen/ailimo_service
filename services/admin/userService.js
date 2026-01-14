@@ -29,15 +29,28 @@ const getUserList = async (params) => {
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
         { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] },
-        { model: db.Administrator, as: 'auditor', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] },
+        { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }
       ],
       offset,
       limit: parseInt(pageSize),
       order: [['created_at', 'DESC']]
     });
 
+    // 转换 auditBy 为 audit_by
+    const list = rows.map(user => {
+      const userData = user.toJSON();
+      if (userData.auditBy) {
+        userData.audit_by = userData.auditBy;
+        delete userData.auditBy;
+      }
+      return userData;
+    });
+
     return {
-      list: rows,
+      list,
       total: count,
       page: parseInt(page),
       pageSize: parseInt(pageSize)
@@ -59,7 +72,10 @@ const getUserDetail = async (userId) => {
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
         { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] },
-        { model: db.Administrator, as: 'auditor', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] },
+        { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }
       ]
     });
 
@@ -67,7 +83,14 @@ const getUserDetail = async (userId) => {
       throw new Error('用户不存在');
     }
 
-    return user;
+    // 转换 auditBy 为 audit_by
+    const userData = user.toJSON();
+    if (userData.auditBy) {
+      userData.audit_by = userData.auditBy;
+      delete userData.auditBy;
+    }
+
+    return userData;
   } catch (err) {
     logger.error(`Get user detail failed: ${err.message}`);
     throw err;

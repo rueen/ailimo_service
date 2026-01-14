@@ -165,7 +165,7 @@ const getReservationList = async (params) => {
         { model: db.Equipment, as: 'equipment', attributes: ['id', 'name'] },
         { model: db.User, as: 'user', attributes: ['id', 'name', 'phone'] },
         { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
-        { model: db.Administrator, as: 'auditor', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
       ],
       offset,
       limit: parseInt(pageSize),
@@ -196,7 +196,7 @@ const getReservationDetail = async (id) => {
         { model: db.Equipment, as: 'equipment', attributes: ['id', 'name', 'details'] },
         { model: db.User, as: 'user', attributes: ['id', 'name', 'phone'] },
         { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
-        { model: db.Administrator, as: 'auditor', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
       ]
     });
 
