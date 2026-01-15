@@ -4,7 +4,7 @@
  */
 const express = require('express');
 const router = express.Router();
-const { h5Auth, smsLimiter } = require('../middlewares');
+const { h5Auth, smsLimiter, uploadSingle } = require('../middlewares');
 
 // 控制器
 const authController = require('../controllers/h5/authController');
@@ -22,6 +22,18 @@ router.post('/auth/logout', h5Auth, authController.logout);
 router.get('/regions', regionController.getRegionList);
 router.get('/regions/tree', regionController.getRegionTree);
 router.get('/regions/:id', regionController.getRegionById);
+
+// ==================== 文件上传 ====================
+router.post('/upload/image', h5Auth, uploadSingle('file'), async (req, res, next) => {
+  try {
+    const { upload } = require('../utils');
+    const { directory } = req.body; // 可选的目录参数
+    const result = await upload.uploadImage(req.file, directory);
+    return res.json({ code: 200, message: '上传成功', data: result });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ==================== 订单提交 ====================
 router.post('/equipment-orders', h5Auth, orderController.createEquipmentReservation);

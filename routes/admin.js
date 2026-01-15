@@ -262,7 +262,8 @@ router.get('/regions/:id', adminAuth, regionController.getRegionById);
 router.post('/upload/image', adminAuth, uploadSingle('file'), async (req, res, next) => {
   try {
     const { upload } = require('../utils');
-    const result = await upload.uploadImage(req.file);
+    const { directory } = req.body; // 可选的目录参数，如 'equipment', 'cage' 等
+    const result = await upload.uploadImage(req.file, directory);
     return res.json({ code: 200, message: '上传成功', data: result });
   } catch (err) {
     next(err);
