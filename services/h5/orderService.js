@@ -32,7 +32,7 @@ const createEquipmentReservation = async (userId, data) => {
     }
 
     // 检查时间段可用性
-    const timeSlotArray = JSON.parse(time_slots);
+    const timeSlotArray = typeof time_slots === 'string' ? JSON.parse(time_slots) : time_slots;
     for (const slot of timeSlotArray) {
       const isAvailable = await checkEquipmentAvailability(
         equipment_id,
@@ -94,16 +94,20 @@ const createCageReservation = async (userId, data) => {
   const transaction = await db.sequelize.transaction();
   
   try {
-    const { cage_id, reservation_date, time_slots, quantity } = data;
+    const { animal_type_id, environment_id, reservation_date, time_slots, quantity } = data;
 
-    // 检查笼位是否存在且可用
-    const cage = await db.Cage.findByPk(cage_id, { transaction });
+    // 根据动物类型+环境查询匹配的笼位
+    const cage = await db.Cage.findOne({
+      where: {
+        animal_type_id,
+        environment_id,
+        status: 1  // 只查询启用的笼位
+      },
+      transaction
+    });
+
     if (!cage) {
-      throw new Error('笼位不存在');
-    }
-
-    if (cage.status !== 1) {
-      throw new Error('笼位不可用');
+      throw new Error('未找到匹配的笼位（动物类型+环境）');
     }
 
     // 检查预约数量
@@ -112,10 +116,10 @@ const createCageReservation = async (userId, data) => {
     }
 
     // 检查时间段可用数量
-    const timeSlotArray = JSON.parse(time_slots);
+    const timeSlotArray = typeof time_slots === 'string' ? JSON.parse(time_slots) : time_slots;
     for (const slot of timeSlotArray) {
       const available = await checkCageAvailability(
-        cage_id,
+        cage.id,
         reservation_date,
         slot,
         transaction
@@ -126,18 +130,16 @@ const createCageReservation = async (userId, data) => {
       }
     }
 
-    // 补充动物类型和环境类型（从笼位数据快照）
-    data.animal_type_id = cage.animal_type_id;
-    data.environment_id = cage.environment_id;
-
+    // 自动分配笼位ID
     const reservation = await db.CageReservation.create({
       ...data,
+      cage_id: cage.id,
       user_id: userId,
       status: 0 // 待审核
     }, { transaction });
 
     await transaction.commit();
-    logger.info(`Cage reservation created by user: userId=${userId}, reservationId=${reservation.id}`);
+    logger.info(`Cage reservation created by user: userId=${userId}, reservationId=${reservation.id}, cage_id=${cage.id}`);
     
     return reservation;
   } catch (error) {
@@ -173,8 +175,8 @@ const checkCageAvailability = async (cageId, date, timeSlot, transaction) => {
   // 计算已预约的数量
   let reservedQuantity = 0;
   for (const reservation of reservations) {
-    const slots = JSON.parse(reservation.time_slots);
-    if (slots.includes(timeSlot)) {
+    const slots = reservation.time_slots;
+    if (slots && slots.includes(timeSlot)) {
       reservedQuantity += reservation.quantity;
     }
   }
@@ -731,8 +733,8 @@ const getAvailableTimeSlotsByType = async (params) => {
       
       let reservedQuantity = 0;
       for (const reservation of reservations) {
-        const slots = JSON.parse(reservation.time_slots);
-        if (slots.includes(timeSlotStr)) {
+        const slots = reservation.time_slots;
+        if (slots && slots.includes(timeSlotStr)) {
           reservedQuantity += reservation.quantity;
         }
       }

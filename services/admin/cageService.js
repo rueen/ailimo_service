@@ -269,8 +269,9 @@ const getAvailableTimeSlotsByType = async (params) => {
       
       let reservedQuantity = 0;
       for (const reservation of reservations) {
-        const slots = JSON.parse(reservation.time_slots);
-        if (slots.includes(timeSlotStr)) {
+        // time_slots 是 JSON 类型，Sequelize 自动解析为数组，无需 JSON.parse
+        const slots = reservation.time_slots;
+        if (slots && slots.includes(timeSlotStr)) {
           reservedQuantity += reservation.quantity;
         }
       }
@@ -310,12 +311,16 @@ const getReservationList = async (params) => {
       page = 1, 
       pageSize = 10, 
       cage_id, 
-      user_id, 
+      user_id,
+      user_name,
+      user_phone,
       status,
+      reservation_date,
       start_date,
       end_date,
       animal_type_id,
-      environment_id
+      environment_id,
+      purpose_id
     } = params;
     
     const where = {};
@@ -324,7 +329,14 @@ const getReservationList = async (params) => {
     if (status !== undefined) where.status = status;
     if (animal_type_id) where.animal_type_id = animal_type_id;
     if (environment_id) where.environment_id = environment_id;
-    if (start_date && end_date) {
+    if (purpose_id) where.purpose_id = purpose_id;
+    
+    // 日期筛选：支持单日期精确查询或日期范围查询
+    if (reservation_date) {
+      // 精确匹配某个日期
+      where.reservation_date = reservation_date;
+    } else if (start_date && end_date) {
+      // 日期范围查询
       where.reservation_date = {
         [Op.between]: [start_date, end_date]
       };
@@ -332,6 +344,18 @@ const getReservationList = async (params) => {
       where.reservation_date = { [Op.gte]: start_date };
     } else if (end_date) {
       where.reservation_date = { [Op.lte]: end_date };
+    }
+
+    // 构建用户搜索条件
+    const userWhere = {};
+    let hasUserWhere = false;
+    if (user_name) {
+      userWhere.name = { [Op.like]: `%${user_name}%` };
+      hasUserWhere = true;
+    }
+    if (user_phone) {
+      userWhere.phone = { [Op.like]: `%${user_phone}%` };
+      hasUserWhere = true;
     }
 
     const offset = (page - 1) * pageSize;
@@ -346,7 +370,9 @@ const getReservationList = async (params) => {
         { 
           model: db.User, 
           as: 'user', 
-          attributes: ['id', 'name', 'phone'] 
+          attributes: ['id', 'name', 'phone'],
+          where: hasUserWhere ? userWhere : undefined,
+          required: hasUserWhere
         },
         { 
           model: db.AnimalType, 
@@ -376,7 +402,11 @@ const getReservationList = async (params) => {
       ],
       offset,
       limit: parseInt(pageSize),
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      // 当在 include 中使用 where 条件时，需要添加 distinct 来确保正确计数
+      distinct: true,
+      // 使用列名指定 distinct 的字段（使用主键）
+      col: 'id'
     });
 
     return { 
@@ -463,20 +493,25 @@ const createReservation = async (data) => {
   
   try {
     const { 
-      cage_id, 
+      animal_type_id,
+      environment_id,
       reservation_date, 
       time_slots, 
       quantity 
     } = data;
 
-    // 检查笼位是否存在
-    const cage = await db.Cage.findByPk(cage_id, { transaction });
-    if (!cage) {
-      throw new Error('笼位不存在');
-    }
+    // 根据动物类型+环境查询匹配的笼位
+    const cage = await db.Cage.findOne({
+      where: {
+        animal_type_id,
+        environment_id,
+        status: 1  // 只查询启用的笼位
+      },
+      transaction
+    });
 
-    if (cage.status !== 1) {
-      throw new Error('笼位不可用');
+    if (!cage) {
+      throw new Error('未找到匹配的笼位（动物类型+环境）');
     }
 
     // 检查预约数量
@@ -485,10 +520,10 @@ const createReservation = async (data) => {
     }
 
     // 检查时间段可用性（数量）
-    const timeSlotArray = JSON.parse(time_slots);
+    const timeSlotArray = typeof time_slots === 'string' ? JSON.parse(time_slots) : time_slots;
     for (const slot of timeSlotArray) {
       const available = await checkCageAvailability(
-        cage_id, 
+        cage.id, 
         reservation_date, 
         slot, 
         transaction
@@ -499,15 +534,14 @@ const createReservation = async (data) => {
       }
     }
 
-    // 补充动物类型和环境类型（从笼位数据快照）
-    data.animal_type_id = cage.animal_type_id;
-    data.environment_id = cage.environment_id;
+    // 自动分配笼位ID
+    data.cage_id = cage.id;
     data.status = 0; // 待审核
 
     const reservation = await db.CageReservation.create(data, { transaction });
     
     await transaction.commit();
-    logger.info(`Cage reservation created: id=${reservation.id}`);
+    logger.info(`Cage reservation created: id=${reservation.id}, cage_id=${cage.id}`);
     
     return reservation;
   } catch (error) {
@@ -557,7 +591,8 @@ const updateReservation = async (id, data) => {
         throw new Error(`预约数量不能超过笼位总数量（${cage.quantity}）`);
       }
 
-      const timeSlotArray = JSON.parse(timeSlots);
+      // timeSlots 可能来自前端（字符串）或数据库（数组）
+      const timeSlotArray = typeof timeSlots === 'string' ? JSON.parse(timeSlots) : timeSlots;
       for (const slot of timeSlotArray) {
         const available = await checkCageAvailability(
           cageId, 
@@ -632,7 +667,7 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
       }
 
       // 检查时间段可用性
-      const timeSlots = JSON.parse(reservation.time_slots);
+      const timeSlots = reservation.time_slots;
       for (const slot of timeSlots) {
         const available = await checkCageAvailability(
           reservation.cage_id,
@@ -785,8 +820,8 @@ const checkCageAvailability = async (
     // 计算已预约的数量
     let reservedQuantity = 0;
     for (const reservation of reservations) {
-      const slots = JSON.parse(reservation.time_slots);
-      if (slots.includes(timeSlot)) {
+      const slots = reservation.time_slots;
+      if (slots && slots.includes(timeSlot)) {
         reservedQuantity += reservation.quantity;
       }
     }
@@ -1134,8 +1169,8 @@ const getAvailableTimeSlots = async (cageId, date) => {
       
       let reservedQuantity = 0;
       for (const reservation of reservations) {
-        const slots = JSON.parse(reservation.time_slots);
-        if (slots.includes(timeSlotStr)) {
+        const slots = reservation.time_slots;
+        if (slots && slots.includes(timeSlotStr)) {
           reservedQuantity += reservation.quantity;
         }
       }

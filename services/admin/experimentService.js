@@ -14,55 +14,80 @@ const { Op } = require('sequelize');
  */
 const getOperationList = async (params) => {
   try {
-    const { 
-      page = 1, 
-      pageSize = 10, 
-      user_id, 
+    const {
+      page = 1,
+      pageSize = 10,
+      user_id,
+      user_name,
+      user_phone,
       status,
       operation_content_id,
       animal_type_id,
+      handler_id,
+      reservation_date,
       start_date,
       end_date
     } = params;
-    
+
     const where = {};
     if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
     if (operation_content_id) where.operation_content_id = operation_content_id;
     if (animal_type_id) where.animal_type_id = animal_type_id;
-    if (start_date && end_date) {
+    if (handler_id) where.handler_id = handler_id;
+    
+    // 日期筛选：支持单日期精确查询或日期范围查询
+    if (reservation_date) {
+      // 精确匹配某个日期
+      where.operation_date = reservation_date;
+    } else if (start_date && end_date) {
+      // 日期范围查询
       where.operation_date = {
         [Op.between]: [start_date, end_date]
       };
     } else if (start_date) {
       where.operation_date = { [Op.gte]: start_date };
-    } else if (endDate) {
-      where.operation_date = { [Op.lte]: endDate };
+    } else if (end_date) {
+      where.operation_date = { [Op.lte]: end_date };
+    }
+
+    // 构建用户搜索条件
+    const userWhere = {};
+    let hasUserWhere = false;
+    if (user_name) {
+      userWhere.name = { [Op.like]: `%${user_name}%` };
+      hasUserWhere = true;
+    }
+    if (user_phone) {
+      userWhere.phone = { [Op.like]: `%${user_phone}%` };
+      hasUserWhere = true;
     }
 
     const offset = (page - 1) * pageSize;
     const { count, rows } = await db.ExperimentOperation.findAndCountAll({
       where,
       include: [
-        { 
-          model: db.OperationContent, 
-          as: 'operation_content', 
-          attributes: ['id', 'name'] 
+        {
+          model: db.OperationContent,
+          as: 'operation_content',
+          attributes: ['id', 'name']
         },
-        { 
-          model: db.AnimalType, 
-          as: 'animal_type', 
-          attributes: ['id', 'name'] 
+        {
+          model: db.AnimalType,
+          as: 'animal_type',
+          attributes: ['id', 'name']
         },
-        { 
-          model: db.User, 
-          as: 'user', 
-          attributes: ['id', 'name', 'phone'] 
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['id', 'name', 'phone'],
+          where: hasUserWhere ? userWhere : undefined,
+          required: hasUserWhere
         },
-        { 
-          model: db.Handler, 
-          as: 'handler', 
-          attributes: ['id', 'name'] 
+        {
+          model: db.Handler,
+          as: 'handler',
+          attributes: ['id', 'name']
         },
         {
           model: db.Administrator,
@@ -72,14 +97,17 @@ const getOperationList = async (params) => {
       ],
       offset,
       limit: parseInt(pageSize),
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      // 当在 include 中使用 where 条件时，需要添加 distinct 来确保正确计数
+      distinct: true,
+      col: 'id'
     });
 
-    return { 
-      list: rows, 
-      total: count, 
-      page: parseInt(page), 
-      pageSize: parseInt(pageSize) 
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize)
     };
   } catch (error) {
     logger.error('Get experiment operation list failed:', error);

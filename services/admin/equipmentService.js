@@ -190,20 +190,20 @@ const getReservationList = async (params) => {
     }
 
     const offset = (page - 1) * pageSize;
-    
+
     const { count, rows } = await db.EquipmentReservation.findAndCountAll({
       where,
       include: [
-        { 
-          model: db.Equipment, 
-          as: 'equipment', 
+        {
+          model: db.Equipment,
+          as: 'equipment',
           attributes: ['id', 'name'],
           where: Object.keys(equipmentWhere).length > 0 ? equipmentWhere : undefined,
           required: Object.keys(equipmentWhere).length > 0
         },
-        { 
-          model: db.User, 
-          as: 'user', 
+        {
+          model: db.User,
+          as: 'user',
           attributes: ['id', 'name', 'phone'],
           where: Object.keys(userWhere).length > 0 ? userWhere : undefined,
           required: Object.keys(userWhere).length > 0
@@ -213,7 +213,10 @@ const getReservationList = async (params) => {
       ],
       offset,
       limit: parseInt(pageSize),
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      // 当在 include 中使用 where 条件时，需要添加 distinct 来确保正确计数
+      distinct: true,
+      col: 'id'
     });
 
     // 转换 auditBy 为 audit_by

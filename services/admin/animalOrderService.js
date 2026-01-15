@@ -36,8 +36,8 @@ const getOrderList = async (params) => {
       };
     } else if (start_date) {
       where.delivery_date = { [Op.gte]: start_date };
-    } else if (endDate) {
-      where.delivery_date = { [Op.lte]: endDate };
+    } else if (end_date) {
+      where.delivery_date = { [Op.lte]: end_date };
     }
 
     const offset = (page - 1) * pageSize;

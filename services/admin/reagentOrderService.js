@@ -36,10 +36,10 @@ const getOrderList = async (params) => {
       where.delivery_date = {
         [Op.between]: [start_date, end_date]
       };
-    } else if (startDate) {
-      where.delivery_date = { [Op.gte]: startDate };
-    } else if (endDate) {
-      where.delivery_date = { [Op.lte]: endDate };
+    } else if (start_date) {
+      where.delivery_date = { [Op.gte]: start_date };
+    } else if (end_date) {
+      where.delivery_date = { [Op.lte]: end_date };
     }
 
     const offset = (page - 1) * pageSize;
