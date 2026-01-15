@@ -13,11 +13,22 @@ const { validator } = require('../../utils');
  */
 const getUserList = async (params) => {
   try {
-    const { page = 1, pageSize = 10, name, phone, organization_id, audit_status, status } = params;
+    const { page = 1, pageSize = 10, name, phone, keyword, organization_id, audit_status, status } = params;
     
     const where = {};
-    if (name) where.name = { [Op.like]: `%${name}%` };
-    if (phone) where.phone = { [Op.like]: `%${phone}%` };
+    
+    // keyword 优先：同时搜索 name 和 phone
+    if (keyword) {
+      where[Op.or] = [
+        { name: { [Op.like]: `%${keyword}%` } },
+        { phone: { [Op.like]: `%${keyword}%` } }
+      ];
+    } else {
+      // 如果没有 keyword，使用单独的 name 和 phone 搜索
+      if (name) where.name = { [Op.like]: `%${name}%` };
+      if (phone) where.phone = { [Op.like]: `%${phone}%` };
+    }
+    
     if (organization_id) where.organization_id = organization_id;
     if (audit_status !== undefined) where.audit_status = audit_status;
     if (status !== undefined) where.status = status;
