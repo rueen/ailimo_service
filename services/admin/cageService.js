@@ -572,24 +572,62 @@ const updateReservation = async (id, data) => {
       throw new Error('只有待审核的订单才能修改');
     }
 
-    // 如果修改了笼位、日期、时间段或数量，需要重新检查可用性
+    // 如果修改了动物类型、环境、笼位、日期、时间段或数量，需要重新检查可用性
     if (
+      data.animal_type_id || 
+      data.environment_id || 
       data.cage_id || 
       data.reservation_date || 
       data.time_slots || 
-      data.quantity
+      data.quantity !== undefined  // 使用 !== undefined 避免 0 被判断为 false
     ) {
-      const cageId = data.cage_id || reservation.cage_id;
+      const animalTypeId = data.animal_type_id || reservation.animal_type_id;
+      const environmentId = data.environment_id || reservation.environment_id;
       const reservationDate = data.reservation_date || reservation.reservation_date;
       const timeSlots = data.time_slots || reservation.time_slots;
-      const quantity = data.quantity || reservation.quantity;
+      const quantity = data.quantity !== undefined ? data.quantity : reservation.quantity;
 
-      const cage = await db.Cage.findByPk(cageId, { 
-        transaction,
-        lock: transaction.LOCK.UPDATE  // 加悲观锁防止并发问题
-      });
-      if (!cage) {
-        throw new Error('笼位不存在');
+      let cage;
+      let cageId;
+
+      // 如果修改了动物类型或环境类型，需要重新查找匹配的笼位
+      if (data.animal_type_id || data.environment_id) {
+        cage = await db.Cage.findOne({
+          where: {
+            animal_type_id: animalTypeId,
+            environment_id: environmentId,
+            status: 1
+          },
+          transaction,
+          lock: transaction.LOCK.UPDATE  // 加悲观锁防止并发问题
+        });
+
+        if (!cage) {
+          throw new Error('未找到匹配的笼位（动物类型+环境）');
+        }
+
+        cageId = cage.id;
+        // 更新笼位ID和快照字段
+        data.cage_id = cage.id;
+        data.animal_type_id = animalTypeId;
+        data.environment_id = environmentId;
+      } else {
+        // 如果没有修改动物类型和环境，使用原笼位或指定的笼位
+        cageId = data.cage_id || reservation.cage_id;
+        cage = await db.Cage.findByPk(cageId, { 
+          transaction,
+          lock: transaction.LOCK.UPDATE  // 加悲观锁防止并发问题
+        });
+
+        if (!cage) {
+          throw new Error('笼位不存在');
+        }
+
+        // 如果修改了笼位ID，需要更新动物类型和环境类型快照
+        if (data.cage_id && data.cage_id !== reservation.cage_id) {
+          data.animal_type_id = cage.animal_type_id;
+          data.environment_id = cage.environment_id;
+        }
       }
 
       if (quantity > cage.quantity) {
@@ -610,12 +648,6 @@ const updateReservation = async (id, data) => {
         if (available < quantity) {
           throw new Error(`时间段 ${slot} 可用数量不足，当前可用：${available}`);
         }
-      }
-
-      // 更新动物类型和环境类型快照
-      if (data.cage_id) {
-        data.animal_type_id = cage.animal_type_id;
-        data.environment_id = cage.environment_id;
       }
     }
 
