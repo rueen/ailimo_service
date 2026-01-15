@@ -82,7 +82,7 @@ const getOrderList = async (params) => {
         {
           model: db.Administrator,
           as: 'auditBy',
-          attributes: ['id', 'username', 'remark']
+          attributes: ['id', 'username']
         }
       ],
       offset,
@@ -118,7 +118,7 @@ const getOrderDetail = async (id) => {
         { model: db.EnvironmentType, as: 'environment' },
         { model: db.User, as: 'user' },
         { model: db.Handler, as: 'handler' },
-        { model: db.Administrator, as: 'auditBy' }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
       ]
     });
 

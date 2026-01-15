@@ -286,8 +286,11 @@ const createReservation = async (data) => {
   try {
     const { equipment_id, reservation_date, time_slots } = data;
 
-    // 检查设备是否存在
-    const equipment = await db.Equipment.findByPk(equipment_id, { transaction });
+    // 检查设备是否存在，并加锁防止并发问题
+    const equipment = await db.Equipment.findByPk(equipment_id, { 
+      transaction,
+      lock: transaction.LOCK.UPDATE  // 加悲观锁
+    });
     if (!equipment) {
       throw new Error('设备不存在');
     }
@@ -347,7 +350,10 @@ const updateReservation = async (id, data) => {
       const reservationDate = data.reservation_date || reservation.reservation_date;
       const timeSlots = data.time_slots || reservation.time_slots;
 
-      const equipment = await db.Equipment.findByPk(equipmentId, { transaction });
+      const equipment = await db.Equipment.findByPk(equipmentId, { 
+        transaction,
+        lock: transaction.LOCK.UPDATE  // 加悲观锁防止并发问题
+      });
       if (!equipment) {
         throw new Error('设备不存在');
       }

@@ -92,7 +92,7 @@ const getOperationList = async (params) => {
         {
           model: db.Administrator,
           as: 'auditBy',
-          attributes: ['id', 'username', 'remark']
+          attributes: ['id', 'username']
         }
       ],
       offset,
@@ -142,7 +142,8 @@ const getOperationDetail = async (id) => {
         },
         {
           model: db.Administrator,
-          as: 'auditBy'
+          as: 'auditBy',
+          attributes: ['id', 'username']
         }
       ]
     });

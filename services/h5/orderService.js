@@ -21,8 +21,11 @@ const createEquipmentReservation = async (userId, data) => {
   try {
     const { equipment_id, reservation_date, time_slots } = data;
 
-    // 检查设备是否存在且可用
-    const equipment = await db.Equipment.findByPk(equipment_id, { transaction });
+    // 检查设备是否存在且可用，并加锁防止并发问题
+    const equipment = await db.Equipment.findByPk(equipment_id, { 
+      transaction,
+      lock: transaction.LOCK.UPDATE  // 加悲观锁
+    });
     if (!equipment) {
       throw new Error('设备不存在');
     }
@@ -96,14 +99,15 @@ const createCageReservation = async (userId, data) => {
   try {
     const { animal_type_id, environment_id, reservation_date, time_slots, quantity } = data;
 
-    // 根据动物类型+环境查询匹配的笼位
+    // 根据动物类型+环境查询匹配的笼位，并加锁防止并发问题
     const cage = await db.Cage.findOne({
       where: {
         animal_type_id,
         environment_id,
         status: 1  // 只查询启用的笼位
       },
-      transaction
+      transaction,
+      lock: transaction.LOCK.UPDATE  // 加悲观锁
     });
 
     if (!cage) {
@@ -158,25 +162,24 @@ const checkCageAvailability = async (cageId, date, timeSlot, transaction) => {
     throw new Error('笼位不存在');
   }
 
-  // 查询该日期、时间段的所有已审核通过（待审核和进行中）的预约
+  // 查询该笼位、该日期的所有待审核和进行中的预约
+  // 注意：不在 SQL 中过滤 time_slots，因为 JSON 字段的 LIKE 查询不可靠
   const reservations = await db.CageReservation.findAll({
     where: {
       cage_id: cageId,
       reservation_date: date,
-      status: [0, 1],
-      time_slots: {
-        [Op.like]: `%${timeSlot}%`
-      }
+      status: [0, 1] // 待审核和进行中的订单都占用数量
     },
     attributes: ['quantity', 'time_slots'],
     transaction
   });
 
-  // 计算已预约的数量
+  // 在应用层过滤并计算已预约的数量
   let reservedQuantity = 0;
   for (const reservation of reservations) {
     const slots = reservation.time_slots;
-    if (slots && slots.includes(timeSlot)) {
+    // 确保 slots 是数组，并且包含指定的时间段
+    if (Array.isArray(slots) && slots.includes(timeSlot)) {
       reservedQuantity += reservation.quantity;
     }
   }

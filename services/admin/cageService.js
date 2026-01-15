@@ -397,7 +397,7 @@ const getReservationList = async (params) => {
         {
           model: db.Administrator,
           as: 'auditBy',
-          attributes: ['id', 'username', 'remark']
+          attributes: ['id', 'username']
         }
       ],
       offset,
@@ -460,7 +460,8 @@ const getReservationDetail = async (id) => {
         },
         {
           model: db.Administrator,
-          as: 'auditBy'
+          as: 'auditBy',
+          attributes: ['id', 'username']
         }
       ]
     });
@@ -500,14 +501,15 @@ const createReservation = async (data) => {
       quantity 
     } = data;
 
-    // 根据动物类型+环境查询匹配的笼位
+    // 根据动物类型+环境查询匹配的笼位，并加锁防止并发问题
     const cage = await db.Cage.findOne({
       where: {
         animal_type_id,
         environment_id,
         status: 1  // 只查询启用的笼位
       },
-      transaction
+      transaction,
+      lock: transaction.LOCK.UPDATE  // 加悲观锁
     });
 
     if (!cage) {
@@ -582,7 +584,10 @@ const updateReservation = async (id, data) => {
       const timeSlots = data.time_slots || reservation.time_slots;
       const quantity = data.quantity || reservation.quantity;
 
-      const cage = await db.Cage.findByPk(cageId, { transaction });
+      const cage = await db.Cage.findByPk(cageId, { 
+        transaction,
+        lock: transaction.LOCK.UPDATE  // 加悲观锁防止并发问题
+      });
       if (!cage) {
         throw new Error('笼位不存在');
       }
@@ -657,7 +662,10 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
         throw new Error('审核通过时必须指定负责人');
       }
 
-      const cage = await db.Cage.findByPk(reservation.cage_id, { transaction });
+      const cage = await db.Cage.findByPk(reservation.cage_id, { 
+        transaction,
+        lock: transaction.LOCK.UPDATE  // 加悲观锁防止并发问题
+      });
       if (!cage) {
         throw new Error('笼位不存在');
       }
@@ -797,14 +805,12 @@ const checkCageAvailability = async (
       throw new Error('笼位不存在');
     }
 
-    // 查询该日期、时间段的所有已审核通过（进行中）的预约
+    // 查询该笼位、该日期的所有待审核和进行中的预约
+    // 注意：不在 SQL 中过滤 time_slots，因为 JSON 字段的 LIKE 查询不可靠
     const where = {
       cage_id: cageId,
       reservation_date: date,
-      status: [0, 1], // 待审核和进行中的订单都占用数量
-      time_slots: {
-        [Op.like]: `%${timeSlot}%`
-      }
+      status: [0, 1] // 待审核和进行中的订单都占用数量
     };
 
     if (excludeReservationId) {
@@ -817,17 +823,21 @@ const checkCageAvailability = async (
       transaction
     });
 
-    // 计算已预约的数量
+    // 在应用层过滤并计算已预约的数量
     let reservedQuantity = 0;
     for (const reservation of reservations) {
       const slots = reservation.time_slots;
-      if (slots && slots.includes(timeSlot)) {
+      // 确保 slots 是数组，并且包含指定的时间段
+      if (Array.isArray(slots) && slots.includes(timeSlot)) {
         reservedQuantity += reservation.quantity;
       }
     }
 
     // 可用数量 = 总数量 - 已预约数量
     const available = cage.quantity - reservedQuantity;
+    
+    logger.debug(`Cage availability check: cageId=${cageId}, date=${date}, timeSlot=${timeSlot}, total=${cage.quantity}, reserved=${reservedQuantity}, available=${available}`);
+    
     return Math.max(0, available);
   } catch (error) {
     logger.error('Check cage availability failed:', error);
