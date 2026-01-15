@@ -152,7 +152,13 @@ const getOperationDetail = async (id) => {
       throw new Error('订单不存在');
     }
 
-    return operation;
+    // 转换 auditBy 为 audit_by
+    const data = operation.toJSON();
+    if (data.auditBy) {
+      data.audit_by = data.auditBy;
+      delete data.auditBy;
+    }
+    return data;
   } catch (error) {
     logger.error(`Get experiment operation detail failed: id=${id}`, error);
     throw error;

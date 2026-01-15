@@ -261,14 +261,7 @@ const getReservationDetail = async (id) => {
       throw new Error('订单不存在');
     }
 
-    // 转换 auditBy 为 audit_by
-    const data = reservation.toJSON();
-    if (data.auditBy) {
-      data.audit_by = data.auditBy;
-      delete data.auditBy;
-    }
-
-    return data;
+    return reservation;
   } catch (err) {
     logger.error(`Get equipment reservation detail failed: ${err.message}`);
     throw err;

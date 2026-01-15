@@ -100,7 +100,6 @@ const getUserDetail = async (userId) => {
       userData.audit_by = userData.auditBy;
       delete userData.auditBy;
     }
-
     return userData;
   } catch (err) {
     logger.error(`Get user detail failed: ${err.message}`);

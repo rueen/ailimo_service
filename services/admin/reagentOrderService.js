@@ -102,7 +102,7 @@ const getOrderDetail = async (id) => {
         { model: db.ReagentSpecification, as: 'specification' },
         { model: db.User, as: 'user' },
         { model: db.Handler, as: 'handler' },
-        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'audit_by', attributes: ['id', 'username'] }
       ]
     });
 
