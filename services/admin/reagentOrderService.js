@@ -102,7 +102,7 @@ const getOrderDetail = async (id) => {
         { model: db.ReagentSpecification, as: 'specification' },
         { model: db.User, as: 'user' },
         { model: db.Handler, as: 'handler' },
-        { model: db.Administrator, as: 'audit_by', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
       ]
     });
 
@@ -110,7 +110,13 @@ const getOrderDetail = async (id) => {
       throw new Error('订单不存在');
     }
 
-    return order;
+    // 转换 auditBy 为 audit_by
+    const data = order.toJSON();
+    if (data.auditBy) {
+      data.audit_by = data.auditBy;
+      delete data.auditBy;
+    }
+    return data;
   } catch (error) {
     logger.error(`Get reagent order detail failed: id=${id}`, error);
     throw error;

@@ -171,12 +171,12 @@ const deleteBrand = async (req, res, next) => {
  */
 const getVarietyList = async (req, res, next) => {
   try {
-    const { page, pageSize, name, brandId } = req.query;
+    const { page, pageSize, name, brand_id } = req.query;
     const result = await animalOrderService.getVarietyList({
       page,
       pageSize,
       name,
-      brandId
+      brand_id
     });
     return response.success(res, result);
   } catch (err) {
@@ -353,8 +353,8 @@ const getBrandOptions = async (req, res, next) => {
  */
 const getVarietyOptions = async (req, res, next) => {
   try {
-    const { brandId } = req.query;
-    const options = await animalOrderService.getVarietyOptions(brandId);
+    const { brand_id } = req.query;
+    const options = await animalOrderService.getVarietyOptions(brand_id);
     return response.success(res, options);
   } catch (err) {
     next(err);

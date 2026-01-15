@@ -118,7 +118,7 @@ const getOrderDetail = async (id) => {
         { model: db.EnvironmentType, as: 'environment' },
         { model: db.User, as: 'user' },
         { model: db.Handler, as: 'handler' },
-        { model: db.Administrator, as: 'audit_by', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
       ]
     });
 
@@ -126,7 +126,13 @@ const getOrderDetail = async (id) => {
       throw new Error('订单不存在');
     }
 
-    return order;
+    // 转换 auditBy 为 audit_by
+    const data = order.toJSON();
+    if (data.auditBy) {
+      data.audit_by = data.auditBy;
+      delete data.auditBy;
+    }
+    return data;
   } catch (error) {
     logger.error(`Get animal order detail failed: id=${id}`, error);
     throw error;
@@ -401,11 +407,11 @@ const deleteBrand = async (id) => {
  */
 const getVarietyList = async (params) => {
   try {
-    const { page = 1, pageSize = 10, name, brandId } = params;
+    const { page = 1, pageSize = 10, name, brand_id } = params;
     
     const where = {};
     if (name) where.name = { [Op.like]: `%${name}%` };
-    if (brandId) where.brand_id = brandId;
+    if (brand_id) where.brand_id = brand_id;
 
     const offset = (page - 1) * pageSize;
     
