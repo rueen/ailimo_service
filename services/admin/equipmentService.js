@@ -153,6 +153,7 @@ const getReservationList = async (params) => {
       user_id, 
       user_name,
       user_phone,
+      user_keyword,
       status,
       reservation_date,
       start_date, 
@@ -177,16 +178,29 @@ const getReservationList = async (params) => {
 
     // 构建关联查询的 where 条件
     const equipmentWhere = {};
+    const hasEquipmentWhere = !!equipment_name;
     if (equipment_name) {
       equipmentWhere.name = { [Op.like]: `%${equipment_name}%` };
     }
 
+    // user_keyword 优先：同时搜索 name 和 phone
     const userWhere = {};
-    if (user_name) {
-      userWhere.name = { [Op.like]: `%${user_name}%` };
-    }
-    if (user_phone) {
-      userWhere.phone = { [Op.like]: `%${user_phone}%` };
+    let hasUserWhere = false;
+    if (user_keyword) {
+      userWhere[Op.or] = [
+        { name: { [Op.like]: `%${user_keyword}%` } },
+        { phone: { [Op.like]: `%${user_keyword}%` } }
+      ];
+      hasUserWhere = true;
+    } else {
+      if (user_name) {
+        userWhere.name = { [Op.like]: `%${user_name}%` };
+        hasUserWhere = true;
+      }
+      if (user_phone) {
+        userWhere.phone = { [Op.like]: `%${user_phone}%` };
+        hasUserWhere = true;
+      }
     }
 
     const offset = (page - 1) * pageSize;
@@ -198,15 +212,15 @@ const getReservationList = async (params) => {
           model: db.Equipment, 
           as: 'equipment', 
           attributes: ['id', 'name'],
-          where: Object.keys(equipmentWhere).length > 0 ? equipmentWhere : undefined,
-          required: Object.keys(equipmentWhere).length > 0
+          where: hasEquipmentWhere ? equipmentWhere : undefined,
+          required: hasEquipmentWhere
         },
         { 
           model: db.User, 
           as: 'user', 
           attributes: ['id', 'name', 'phone'],
-          where: Object.keys(userWhere).length > 0 ? userWhere : undefined,
-          required: Object.keys(userWhere).length > 0
+          where: hasUserWhere ? userWhere : undefined,
+          required: hasUserWhere
         },
         { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
         { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
