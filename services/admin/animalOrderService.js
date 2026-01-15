@@ -121,7 +121,10 @@ const getOrderDetail = async (id) => {
         { model: db.EnvironmentType, as: 'environment' },
         { model: db.User, as: 'user' },
         { model: db.Handler, as: 'handler' },
-        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] },
+        { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }
       ]
     });
 
