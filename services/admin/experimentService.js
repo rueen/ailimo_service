@@ -39,16 +39,16 @@ const getOperationList = async (params) => {
     // 日期筛选：支持单日期精确查询或日期范围查询
     if (reservation_date) {
       // 精确匹配某个日期
-      where.operation_date = reservation_date;
+      where.reservation_date = reservation_date;
     } else if (start_date && end_date) {
       // 日期范围查询
-      where.operation_date = {
+      where.reservation_date = {
         [Op.between]: [start_date, end_date]
       };
     } else if (start_date) {
-      where.operation_date = { [Op.gte]: start_date };
+      where.reservation_date = { [Op.gte]: start_date };
     } else if (end_date) {
-      where.operation_date = { [Op.lte]: end_date };
+      where.reservation_date = { [Op.lte]: end_date };
     }
 
     // 构建用户搜索条件
