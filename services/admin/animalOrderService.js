@@ -83,7 +83,10 @@ const getOrderList = async (params) => {
           model: db.Administrator,
           as: 'auditBy',
           attributes: ['id', 'username']
-        }
+        },
+        { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }
       ],
       offset,
       limit: parseInt(pageSize),
