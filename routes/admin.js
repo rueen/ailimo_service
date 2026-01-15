@@ -97,6 +97,8 @@ router.get('/equipment-available-slots', adminAuth, equipmentController.getAvail
 
 // ==================== 笼位租赁 ====================
 // 笼位管理
+router.get('/cages/environments-by-animal-type', adminAuth, cageController.getEnvironmentsByAnimalType);
+router.get('/cages/available-time-slots', adminAuth, cageController.getAvailableTimeSlotsByType);
 router.get('/cages', adminAuth, permission('cage:list'), cageController.getCageList);
 router.get('/cages/:id', adminAuth, permission('cage:detail'), cageController.getCageDetail);
 router.post('/cages', adminAuth, permission('cage:create'), cageController.createCage);

@@ -72,6 +72,52 @@ const deleteCage = async (req, res, next) => {
   }
 };
 
+/**
+ * 根据动物类型获取环境类型选项
+ */
+const getEnvironmentsByAnimalType = async (req, res, next) => {
+  try {
+    const { animal_type_id } = req.query;
+    
+    if (!animal_type_id) {
+      return response.badRequest(res, '动物类型ID不能为空');
+    }
+    
+    const environments = await cageService.getEnvironmentsByAnimalType(animal_type_id);
+    return response.success(res, environments);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 查询笼位可用时间段
+ */
+const getAvailableTimeSlotsByType = async (req, res, next) => {
+  try {
+    const { animal_type_id, environment_id, date } = req.query;
+    
+    if (!animal_type_id) {
+      return response.badRequest(res, '动物类型ID不能为空');
+    }
+    if (!environment_id) {
+      return response.badRequest(res, '环境ID不能为空');
+    }
+    if (!date) {
+      return response.badRequest(res, '查询日期不能为空');
+    }
+    
+    const result = await cageService.getAvailableTimeSlotsByType({
+      animal_type_id,
+      environment_id,
+      date
+    });
+    return response.success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ==================== 订单管理 ====================
 
 /**
@@ -342,6 +388,8 @@ module.exports = {
   createCage,
   updateCage,
   deleteCage,
+  getEnvironmentsByAnimalType,
+  getAvailableTimeSlotsByType,
   
   // 订单管理
   getReservationList,

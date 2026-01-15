@@ -162,6 +162,141 @@ const deleteCage = async (id) => {
   }
 };
 
+/**
+ * 根据动物类型获取环境类型选项
+ * @param {Number} animalTypeId - 动物类型ID
+ * @returns {Promise<Array>}
+ */
+const getEnvironmentsByAnimalType = async (animalTypeId) => {
+  try {
+    // 查询该动物类型的所有笼位
+    const cages = await db.Cage.findAll({
+      where: { 
+        animal_type_id: animalTypeId,
+        status: 1  // 只查询启用的笼位
+      },
+      include: [
+        {
+          model: db.EnvironmentType,
+          as: 'environment',
+          attributes: ['id', 'name']
+        }
+      ],
+      attributes: ['environment_id'],
+      group: ['environment_id']  // 去重
+    });
+
+    // 提取并去重环境类型
+    const environments = [];
+    const envIds = new Set();
+    
+    for (const cage of cages) {
+      if (cage.environment && !envIds.has(cage.environment.id)) {
+        envIds.add(cage.environment.id);
+        environments.push({
+          id: cage.environment.id,
+          name: cage.environment.name
+        });
+      }
+    }
+
+    return environments;
+  } catch (error) {
+    logger.error(`Get environments by animal type failed: animal_type_id=${animalTypeId}`, error);
+    throw error;
+  }
+};
+
+/**
+ * 查询笼位可用时间段
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
+ */
+const getAvailableTimeSlotsByType = async (params) => {
+  try {
+    const { animal_type_id, environment_id, date } = params;
+
+    // 验证动物类型和环境是否存在
+    const animalType = await db.AnimalType.findByPk(animal_type_id);
+    if (!animalType) {
+      throw new Error('动物类型不存在');
+    }
+
+    const environment = await db.EnvironmentType.findByPk(environment_id);
+    if (!environment) {
+      throw new Error('环境类型不存在');
+    }
+
+    // 查询匹配的笼位总数量
+    const cage = await db.Cage.findOne({
+      where: {
+        animal_type_id,
+        environment_id,
+        status: 1
+      }
+    });
+
+    // 如果没有匹配的笼位，返回空结果
+    if (!cage) {
+      return {
+        total_quantity: 0,
+        time_slots: []
+      };
+    }
+
+    const totalQuantity = cage.quantity;
+
+    // 获取所有启用的时间段
+    const allTimeSlots = await db.CageTimeSlot.findAll({
+      where: { status: 1 },
+      order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
+    });
+
+    // 查询该日期、该动物类型+环境的所有预约
+    const reservations = await db.CageReservation.findAll({
+      where: {
+        animal_type_id,
+        environment_id,
+        reservation_date: date,
+        status: [0, 1] // 待审核和进行中
+      },
+      attributes: ['time_slots', 'quantity']
+    });
+
+    // 计算每个时间段的已预约数量
+    const timeSlots = allTimeSlots.map(slot => {
+      const timeSlotStr = `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`;
+      
+      let reservedQuantity = 0;
+      for (const reservation of reservations) {
+        const slots = JSON.parse(reservation.time_slots);
+        if (slots.includes(timeSlotStr)) {
+          reservedQuantity += reservation.quantity;
+        }
+      }
+
+      const availableQuantity = Math.max(0, totalQuantity - reservedQuantity);
+
+      return {
+        id: slot.id,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        display_time: `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`,
+        description: slot.description || '',
+        available_quantity: availableQuantity
+      };
+    });
+
+    return {
+      total_quantity: totalQuantity,
+      time_slots: timeSlots
+    };
+  } catch (error) {
+    logger.error('Get available time slots by type failed:', error);
+    throw error;
+  }
+};
+
 // ==================== 订单管理 ====================
 
 /**
@@ -1034,6 +1169,8 @@ module.exports = {
   createCage,
   updateCage,
   deleteCage,
+  getEnvironmentsByAnimalType,
+  getAvailableTimeSlotsByType,
   
   // 订单管理
   getReservationList,

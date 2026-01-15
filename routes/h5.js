@@ -53,6 +53,8 @@ router.get('/experiment-time-slots', orderController.getExperimentTimeSlots);
 
 // ==================== 基础数据查询 ====================
 router.get('/equipment', orderController.getEquipmentList);
+router.get('/cages/environments-by-animal-type', orderController.getEnvironmentsByAnimalType);
+router.get('/cages/available-time-slots', orderController.getAvailableTimeSlotsByType);
 router.get('/cages', orderController.getCageList);
 router.get('/operation-contents', orderController.getOperationContentList);
 router.get('/animal-brands', orderController.getAnimalBrandList);
