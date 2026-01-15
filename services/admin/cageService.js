@@ -17,15 +17,15 @@ const getCageList = async (params) => {
     const { 
       page = 1, 
       pageSize = 10, 
-      animalTypeId, 
-      environmentId, 
+      animal_type_id, 
+      environment_id, 
       status,
       keyword 
     } = params;
     
     const where = {};
-    if (animalTypeId) where.animal_type_id = animalTypeId;
-    if (environmentId) where.environment_id = environmentId;
+    if (animal_type_id) where.animal_type_id = animal_type_id;
+    if (environment_id) where.environment_id = environment_id;
     if (status !== undefined) where.status = status;
     if (keyword) {
       where.name = { [Op.like]: `%${keyword}%` };
@@ -806,9 +806,13 @@ const getPurposeOptions = async () => {
  * @param {Boolean} onlyActive - 是否仅获取启用的时间段
  * @returns {Promise<Array>}
  */
-const getTimeSlotList = async (onlyActive = true) => {
+const getTimeSlotList = async (status) => {
   try {
-    const where = onlyActive ? { status: 1 } : {};
+    const where = {};
+    if (status !== undefined) {
+      where.status = parseInt(status);
+    }
+    
     const slots = await db.CageTimeSlot.findAll({
       where,
       order: [['sort_order', 'ASC']]

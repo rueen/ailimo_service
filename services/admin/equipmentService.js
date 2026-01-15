@@ -546,10 +546,15 @@ const cancelReservation = async (id) => {
  * 获取时间段列表
  * @returns {Promise<Array>}
  */
-const getTimeSlotList = async () => {
+const getTimeSlotList = async (status) => {
   try {
-    // 返回所有时间段配置（包括启用和禁用的）
+    const where = {};
+    if (status !== undefined) {
+      where.status = parseInt(status);
+    }
+    
     const slots = await db.EquipmentTimeSlot.findAll({
+      where,
       order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
     });
     

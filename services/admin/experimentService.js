@@ -455,9 +455,13 @@ const getOperationContentOptions = async () => {
  * @param {Boolean} onlyActive - 是否仅获取启用的时间段
  * @returns {Promise<Array>}
  */
-const getTimeSlotList = async (onlyActive = true) => {
+const getTimeSlotList = async (status) => {
   try {
-    const where = onlyActive ? { status: 1 } : {};
+    const where = {};
+    if (status !== undefined) {
+      where.status = parseInt(status);
+    }
+    
     const slots = await db.ExperimentTimeSlot.findAll({
       where,
       order: [['sort_order', 'ASC']]

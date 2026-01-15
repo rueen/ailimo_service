@@ -183,8 +183,8 @@ const getOperationContentOptions = async (req, res, next) => {
  */
 const getTimeSlotList = async (req, res, next) => {
   try {
-    const { all } = req.query;
-    const list = await experimentService.getTimeSlotList(all !== 'true');
+    const { status } = req.query;
+    const list = await experimentService.getTimeSlotList(status);
     return response.success(res, list);
   } catch (err) {
     next(err);

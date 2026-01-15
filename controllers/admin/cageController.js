@@ -251,8 +251,8 @@ const getPurposeOptions = async (req, res, next) => {
  */
 const getTimeSlotList = async (req, res, next) => {
   try {
-    const { all } = req.query;
-    const list = await cageService.getTimeSlotList(all !== 'true');
+    const { status } = req.query;
+    const list = await cageService.getTimeSlotList(status);
     return response.success(res, list);
   } catch (err) {
     next(err);
@@ -264,18 +264,18 @@ const getTimeSlotList = async (req, res, next) => {
  */
 const createTimeSlot = async (req, res, next) => {
   try {
-    const { startTime, endTime, description, sortOrder } = req.body;
+    const { start_time, end_time, description, sort_order } = req.body;
     
     // 参数验证
-    if (!startTime || !endTime) {
+    if (!start_time || !end_time) {
       return response.badRequest(res, '开始时间和结束时间不能为空');
     }
 
     const timeSlot = await cageService.createTimeSlot({
-      start_time: startTime,
-      end_time: endTime,
+      start_time,
+      end_time,
       description,
-      sort_order: sortOrder
+      sort_order
     });
     return response.success(res, timeSlot, '创建成功');
   } catch (err) {

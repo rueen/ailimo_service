@@ -198,7 +198,8 @@ const cancelReservation = async (req, res, next) => {
  */
 const getTimeSlotList = async (req, res, next) => {
   try {
-    const slots = await equipmentService.getTimeSlotList();
+    const { status } = req.query;
+    const slots = await equipmentService.getTimeSlotList(status);
     return response.success(res, slots);
   } catch (err) {
     next(err);
