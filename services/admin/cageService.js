@@ -37,7 +37,7 @@ const getCageList = async (params) => {
       include: [
         { 
           model: db.AnimalType, 
-          as: 'animalType', 
+          as: 'animal_type', 
           attributes: ['id', 'name'] 
         },
         { 
@@ -74,7 +74,7 @@ const getCageDetail = async (id) => {
       include: [
         { 
           model: db.AnimalType, 
-          as: 'animalType', 
+          as: 'animal_type', 
           attributes: ['id', 'name'] 
         },
         { 
@@ -215,7 +215,7 @@ const getReservationList = async (params) => {
         },
         { 
           model: db.AnimalType, 
-          as: 'animalType', 
+          as: 'animal_type', 
           attributes: ['id', 'name'] 
         },
         { 
@@ -269,7 +269,7 @@ const getReservationDetail = async (id) => {
           model: db.Cage, 
           as: 'cage',
           include: [
-            { model: db.AnimalType, as: 'animalType' },
+            { model: db.AnimalType, as: 'animal_type' },
             { model: db.EnvironmentType, as: 'environment' }
           ]
         },
@@ -279,7 +279,7 @@ const getReservationDetail = async (id) => {
         },
         { 
           model: db.AnimalType, 
-          as: 'animalType'
+          as: 'animal_type'
         },
         { 
           model: db.EnvironmentType, 
@@ -304,7 +304,14 @@ const getReservationDetail = async (id) => {
       throw new Error('订单不存在');
     }
 
-    return reservation;
+    // 转换 auditBy 为 audit_by（Sequelize 限制：别名不能与字段同名）
+    const data = reservation.toJSON();
+    if (data.auditBy) {
+      data.audit_by = data.auditBy;
+      delete data.auditBy;
+    }
+
+    return data;
   } catch (error) {
     logger.error(`Get cage reservation detail failed: id=${id}`, error);
     throw error;

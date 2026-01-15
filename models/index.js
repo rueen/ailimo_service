@@ -112,20 +112,20 @@ db.EquipmentReservation.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'h
 db.EquipmentReservation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 
 // 笼位租赁关联
-db.Cage.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animalType' });
+db.Cage.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animal_type' });
 db.Cage.belongsTo(db.EnvironmentType, { foreignKey: 'environment_id', as: 'environment' });
 
 db.CageReservation.belongsTo(db.Cage, { foreignKey: 'cage_id', as: 'cage' });
 db.CageReservation.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
-db.CageReservation.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animalType' });
+db.CageReservation.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animal_type' });
 db.CageReservation.belongsTo(db.EnvironmentType, { foreignKey: 'environment_id', as: 'environment' });
 db.CageReservation.belongsTo(db.CagePurpose, { foreignKey: 'purpose_id', as: 'purpose' });
 db.CageReservation.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
 db.CageReservation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 
 // 实验代操作关联
-db.ExperimentOperation.belongsTo(db.OperationContent, { foreignKey: 'operation_content_id', as: 'operationContent' });
-db.ExperimentOperation.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animalType' });
+db.ExperimentOperation.belongsTo(db.OperationContent, { foreignKey: 'operation_content_id', as: 'operation_content' });
+db.ExperimentOperation.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animal_type' });
 db.ExperimentOperation.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.ExperimentOperation.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
 db.ExperimentOperation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });

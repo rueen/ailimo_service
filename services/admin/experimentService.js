@@ -46,12 +46,12 @@ const getOperationList = async (params) => {
       include: [
         { 
           model: db.OperationContent, 
-          as: 'operationContent', 
+          as: 'operation_content', 
           attributes: ['id', 'name'] 
         },
         { 
           model: db.AnimalType, 
-          as: 'animalType', 
+          as: 'animal_type', 
           attributes: ['id', 'name'] 
         },
         { 
@@ -98,11 +98,11 @@ const getOperationDetail = async (id) => {
       include: [
         { 
           model: db.OperationContent, 
-          as: 'operationContent'
+          as: 'operation_content'
         },
         { 
           model: db.AnimalType, 
-          as: 'animalType'
+          as: 'animal_type'
         },
         { 
           model: db.User, 
