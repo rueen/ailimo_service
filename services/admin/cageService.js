@@ -320,7 +320,8 @@ const getReservationList = async (params) => {
       end_date,
       animal_type_id,
       environment_id,
-      purpose_id
+      purpose_id,
+      order_sn,
     } = params;
     
     const where = {};
@@ -330,7 +331,7 @@ const getReservationList = async (params) => {
     if (animal_type_id) where.animal_type_id = animal_type_id;
     if (environment_id) where.environment_id = environment_id;
     if (purpose_id) where.purpose_id = purpose_id;
-    
+    if (order_sn) where.order_sn = order_sn;
     // 日期筛选：支持单日期精确查询或日期范围查询
     if (reservation_date) {
       // 精确匹配某个日期

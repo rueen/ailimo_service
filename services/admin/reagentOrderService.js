@@ -22,7 +22,8 @@ const getOrderList = async (params) => {
       brand_id,
       start_date,
       end_date,
-      keyword
+      keyword,
+      order_sn
     } = params;
     
     const where = {};
@@ -41,7 +42,7 @@ const getOrderList = async (params) => {
     } else if (end_date) {
       where.delivery_date = { [Op.lte]: end_date };
     }
-
+    if (order_sn) where.order_sn = order_sn;
     const offset = (page - 1) * pageSize;
     const { count, rows } = await db.ReagentOrder.findAndCountAll({
       where,
@@ -126,15 +127,31 @@ const getOrderDetail = async (id) => {
 /**
  * 创建试剂订单（管理端）
  * @param {Object} data - 订单数据
+ * @param {Number} adminId - 管理员ID（可选）
  * @returns {Promise<Object>}
  */
-const createOrder = async (data) => {
+const createOrder = async (data, adminId = null) => {
+  const transaction = await db.sequelize.transaction();
+  
   try {
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.REAGENT, transaction);
+
+    // 设置订单字段
+    data.order_sn = orderSn;
     data.status = 0; // 待审核
-    const order = await db.ReagentOrder.create(data);
-    logger.info(`Reagent order created: id=${order.id}`);
+    data.source = adminId ? ORDER_SOURCE.ADMIN : ORDER_SOURCE.USER;
+    data.created_by_admin_id = adminId || null;
+
+    const order = await db.ReagentOrder.create(data, { transaction });
+    
+    await transaction.commit();
+    logger.info(`Reagent order created: id=${order.id}, sn=${orderSn}, source=${data.source}`);
     return order;
   } catch (error) {
+    await transaction.rollback();
     logger.error('Create reagent order failed:', error);
     throw error;
   }

@@ -41,7 +41,7 @@ const getOrderDetail = async (req, res, next) => {
  */
 const createOrder = async (req, res, next) => {
   try {
-    const order = await reagentOrderService.createOrder(req.body);
+    const order = await reagentOrderService.createOrder(req.body, req.userId);
     return response.success(res, order, '创建成功');
   } catch (err) {
     next(err);

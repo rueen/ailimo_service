@@ -49,14 +49,22 @@ const createEquipmentReservation = async (userId, data) => {
       }
     }
 
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.EQUIPMENT, transaction);
+
     const reservation = await db.EquipmentReservation.create({
       ...data,
       user_id: userId,
-      status: 0 // 待审核
+      order_sn: orderSn,
+      status: 0, // 待审核
+      source: ORDER_SOURCE.USER,
+      created_by_admin_id: null
     }, { transaction });
 
     await transaction.commit();
-    logger.info(`Equipment reservation created by user: userId=${userId}, reservationId=${reservation.id}`);
+    logger.info(`Equipment reservation created by user: userId=${userId}, reservationId=${reservation.id}, sn=${orderSn}`);
     
     return reservation;
   } catch (error) {
@@ -134,16 +142,24 @@ const createCageReservation = async (userId, data) => {
       }
     }
 
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.CAGE, transaction);
+
     // 自动分配笼位ID
     const reservation = await db.CageReservation.create({
       ...data,
       cage_id: cage.id,
       user_id: userId,
-      status: 0 // 待审核
+      order_sn: orderSn,
+      status: 0, // 待审核
+      source: ORDER_SOURCE.USER,
+      created_by_admin_id: null
     }, { transaction });
 
     await transaction.commit();
-    logger.info(`Cage reservation created by user: userId=${userId}, reservationId=${reservation.id}, cage_id=${cage.id}`);
+    logger.info(`Cage reservation created by user: userId=${userId}, reservationId=${reservation.id}, cage_id=${cage.id}, sn=${orderSn}`);
     
     return reservation;
   } catch (error) {
@@ -196,6 +212,8 @@ const checkCageAvailability = async (cageId, date, timeSlot, transaction) => {
  * @returns {Promise<Object>}
  */
 const createExperimentOperation = async (userId, data) => {
+  const transaction = await db.sequelize.transaction();
+  
   try {
     // 检查操作内容是否存在
     const operationContent = await db.OperationContent.findByPk(data.operation_content_id);
@@ -211,15 +229,25 @@ const createExperimentOperation = async (userId, data) => {
       }
     }
 
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.EXPERIMENT, transaction);
+
     const operation = await db.ExperimentOperation.create({
       ...data,
       user_id: userId,
-      status: 0 // 待审核
-    });
+      order_sn: orderSn,
+      status: 0, // 待审核
+      source: ORDER_SOURCE.USER,
+      created_by_admin_id: null
+    }, { transaction });
 
-    logger.info(`Experiment operation created by user: userId=${userId}, operationId=${operation.id}`);
+    await transaction.commit();
+    logger.info(`Experiment operation created by user: userId=${userId}, operationId=${operation.id}, sn=${orderSn}`);
     return operation;
   } catch (error) {
+    await transaction.rollback();
     logger.error('Create experiment operation failed:', error);
     throw error;
   }
@@ -234,6 +262,8 @@ const createExperimentOperation = async (userId, data) => {
  * @returns {Promise<Object>}
  */
 const createAnimalOrder = async (userId, data) => {
+  const transaction = await db.sequelize.transaction();
+  
   try {
     // 验证地区ID
     const regionValidation = await validator.validateRegionIds(data.province_id, data.city_id, data.district_id);
@@ -241,15 +271,25 @@ const createAnimalOrder = async (userId, data) => {
       throw new Error(regionValidation.message);
     }
 
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.ANIMAL, transaction);
+
     const order = await db.AnimalOrder.create({
       ...data,
       user_id: userId,
-      status: 0 // 待审核
-    });
+      order_sn: orderSn,
+      status: 0, // 待审核
+      source: ORDER_SOURCE.USER,
+      created_by_admin_id: null
+    }, { transaction });
 
-    logger.info(`Animal order created by user: userId=${userId}, orderId=${order.id}`);
+    await transaction.commit();
+    logger.info(`Animal order created by user: userId=${userId}, orderId=${order.id}, sn=${orderSn}`);
     return order;
   } catch (error) {
+    await transaction.rollback();
     logger.error('Create animal order failed:', error);
     throw error;
   }
@@ -264,6 +304,8 @@ const createAnimalOrder = async (userId, data) => {
  * @returns {Promise<Object>}
  */
 const createReagentOrder = async (userId, data) => {
+  const transaction = await db.sequelize.transaction();
+  
   try {
     // 验证地区ID
     const regionValidation = await validator.validateRegionIds(data.province_id, data.city_id, data.district_id);
@@ -271,15 +313,25 @@ const createReagentOrder = async (userId, data) => {
       throw new Error(regionValidation.message);
     }
 
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.REAGENT, transaction);
+
     const order = await db.ReagentOrder.create({
       ...data,
       user_id: userId,
-      status: 0 // 待审核
-    });
+      order_sn: orderSn,
+      status: 0, // 待审核
+      source: ORDER_SOURCE.USER,
+      created_by_admin_id: null
+    }, { transaction });
 
-    logger.info(`Reagent order created by user: userId=${userId}, orderId=${order.id}`);
+    await transaction.commit();
+    logger.info(`Reagent order created by user: userId=${userId}, orderId=${order.id}, sn=${orderSn}`);
     return order;
   } catch (error) {
+    await transaction.rollback();
     logger.error('Create reagent order failed:', error);
     throw error;
   }

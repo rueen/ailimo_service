@@ -66,8 +66,9 @@ async function generateOrderSn(prefix, transaction = null) {
       }
     );
     
-    // 生成新的序号
-    const nextSeq = (result.max_seq || 0) + 1;
+    // 生成新的序号（确保转换为数字类型）
+    const maxSeq = parseInt(result.max_seq, 10) || 0;
+    const nextSeq = maxSeq + 1;
     
     // 生成完整订单号：前缀 + 日期 + 序号（4位，不足补0）
     const orderSn = `${prefix}${dateStr}${nextSeq.toString().padStart(4, '0')}`;

@@ -41,7 +41,7 @@ const getOperationDetail = async (req, res, next) => {
  */
 const createOperation = async (req, res, next) => {
   try {
-    const operation = await experimentService.createOperation(req.body);
+    const operation = await experimentService.createOperation(req.body, req.userId);
     return response.success(res, operation, '创建成功');
   } catch (err) {
     next(err);

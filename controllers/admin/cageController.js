@@ -155,7 +155,7 @@ const getReservationDetail = async (req, res, next) => {
  */
 const createReservation = async (req, res, next) => {
   try {
-    const reservation = await cageService.createReservation(req.body);
+    const reservation = await cageService.createReservation(req.body, req.userId);
     return response.success(res, reservation, '创建成功');
   } catch (err) {
     next(err);

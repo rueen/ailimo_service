@@ -156,14 +156,15 @@ const getReservationList = async (params) => {
       status,
       reservation_date,
       start_date, 
-      end_date 
+      end_date,
+      order_sn,
     } = params;
     
     const where = {};
     if (equipment_id) where.equipment_id = equipment_id;
     if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
-    
+    if (order_sn) where.order_sn = order_sn;
     // 日期筛选：支持单日期精确查询或日期范围查询
     if (reservation_date) {
       // 精确匹配某个日期

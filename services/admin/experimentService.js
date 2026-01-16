@@ -26,7 +26,8 @@ const getOperationList = async (params) => {
       handler_id,
       reservation_date,
       start_date,
-      end_date
+      end_date,
+      order_sn,
     } = params;
 
     const where = {};
@@ -35,7 +36,7 @@ const getOperationList = async (params) => {
     if (operation_content_id) where.operation_content_id = operation_content_id;
     if (animal_type_id) where.animal_type_id = animal_type_id;
     if (handler_id) where.handler_id = handler_id;
-    
+    if (order_sn) where.order_sn = order_sn;
     // 日期筛选：支持单日期精确查询或日期范围查询
     if (reservation_date) {
       // 精确匹配某个日期
@@ -168,9 +169,12 @@ const getOperationDetail = async (id) => {
 /**
  * 创建实验操作订单（管理端）
  * @param {Object} data - 订单数据
+ * @param {Number} adminId - 管理员ID（可选）
  * @returns {Promise<Object>}
  */
-const createOperation = async (data) => {
+const createOperation = async (data, adminId = null) => {
+  const transaction = await db.sequelize.transaction();
+  
   try {
     // 检查操作内容是否存在
     const operationContent = await db.OperationContent.findByPk(data.operation_content_id);
@@ -190,13 +194,25 @@ const createOperation = async (data) => {
       throw new Error('用户不存在');
     }
 
-    data.status = 0; // 待审核
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.EXPERIMENT, transaction);
 
-    const operation = await db.ExperimentOperation.create(data);
-    logger.info(`Experiment operation created: id=${operation.id}`);
+    // 设置订单字段
+    data.order_sn = orderSn;
+    data.status = 0; // 待审核
+    data.source = adminId ? ORDER_SOURCE.ADMIN : ORDER_SOURCE.USER;
+    data.created_by_admin_id = adminId || null;
+
+    const operation = await db.ExperimentOperation.create(data, { transaction });
+    
+    await transaction.commit();
+    logger.info(`Experiment operation created: id=${operation.id}, sn=${orderSn}, source=${data.source}`);
     
     return operation;
   } catch (error) {
+    await transaction.rollback();
     logger.error('Create experiment operation failed:', error);
     throw error;
   }
