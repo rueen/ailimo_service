@@ -1,529 +1,484 @@
 /**
  * 批量生成权限脚本
- * 从路由文件中提取权限信息，自动生成权限数据
+ * 根据预定义的权限配置自动生成权限数据
  * 
  * 使用方法：
  * node scripts/generate-permissions.js
  */
 
-const fs = require('fs');
-const path = require('path');
 const db = require('../models');
 const logger = require('../config/logger');
 
 /**
- * 权限模块分组配置
- * 定义父级权限和子权限的映射关系
+ * 权限配置
+ * 定义系统中所有的权限结构
  */
-const PERMISSION_GROUPS = {
-  // 工作台
-  'dashboard': {
+const PERMISSION_CONFIG = {
+  // 一级权限：工作台
+  dashboard: {
     name: '工作台',
     code: 'dashboard',
     children: []
   },
-  // 用户管理
-  'user': {
+  
+  // 一级权限：用户管理
+  user: {
     name: '用户管理',
     code: 'user',
     children: [
-      { code: 'user', name: '用户管理' },
-      { code: 'organization', name: '组织机构' },
-      { code: 'research_group', name: '课题组' }
+      { name: '用户列表', code: 'user:list' },
+      { name: '用户详情', code: 'user:detail' },
+      { name: '新增用户', code: 'user:create' },
+      { name: '编辑用户', code: 'user:update' },
+      { name: '删除用户', code: 'user:delete' },
+      { name: '审核用户', code: 'user:audit' },
+      // 组织机构
+      { 
+        name: '组织机构',
+        code: 'organization:list',
+        children: [
+          { name: '新增组织机构', code: 'organization:create' },
+          { name: '编辑组织机构', code: 'organization:update' },
+          { name: '删除组织机构', code: 'organization:delete' },
+        ]
+      },
+      // 课题组
+      { 
+        name: '课题组',
+        code: 'research_group:list',
+        children: [
+          { name: '新增课题组', code: 'research_group:create' },
+          { name: '编辑课题组', code: 'research_group:update' },
+          { name: '删除课题组', code: 'research_group:delete' },
+        ]
+      },
     ]
   },
-  // 设备租赁
-  'equipment': {
+  
+  // TODO: 后续补充其他模块的权限配置
+  // - 设备租赁
+  equipment: {
     name: '设备租赁',
-    code: 'equipment',
+    code: 'equipment_reservation',
     children: [
-      { code: 'equipment', name: '设备管理' },
-      { code: 'equipment_reservation', name: '设备订单' },
-      { code: 'equipment_time_slot', name: '设备时间段' }
+      { name: '租赁订单', code: 'equipment_reservation:list' },
+      { name: '订单详情', code: 'equipment_reservation:detail' },
+      { name: '新增订单', code: 'equipment_reservation:create' },
+      { name: '编辑订单', code: 'equipment_reservation:update' },
+      { name: '审核订单', code: 'equipment_reservation:audit' },
+      { name: '完成订单', code: 'equipment_reservation:complete' },
+      { name: '取消订单', code: 'equipment_reservation:cancel' },
+      // 设备管理
+      {
+        name: '设备管理',
+        code: 'equipment:list',
+        children: [
+          { name: '设备详情', code: 'equipment:detail' },
+          { name: '新增设备', code: 'equipment:create' },
+          { name: '编辑设备', code: 'equipment:update' },
+          { name: '删除设备', code: 'equipment:delete' },
+        ]
+      },
+      // 时间段管理
+      {
+        name: '时间段管理',
+        code: 'equipment_time_slot:list',
+        children: [
+          { name: '新增时间段', code: 'equipment_time_slot:create' },
+          { name: '编辑时间段', code: 'equipment_time_slot:update' },
+          { name: '删除时间段', code: 'equipment_time_slot:delete' },
+        ]
+      },
     ]
   },
-  // 笼位租赁
-  'cage': {
+  // - 笼位租赁
+  cage: {
     name: '笼位租赁',
-    code: 'cage',
+    code: 'cage_reservation',
     children: [
-      { code: 'cage', name: '笼位管理' },
-      { code: 'cage_reservation', name: '笼位订单' },
-      { code: 'cage_purpose', name: '笼位用途' },
-      { code: 'cage_time_slot', name: '笼位时间段' }
+      { name: '租赁订单', code: 'cage_reservation:list' },
+      { name: '订单详情', code: 'cage_reservation:detail' },
+      { name: '新增订单', code: 'cage_reservation:create' },
+      { name: '编辑订单', code: 'cage_reservation:update' },
+      { name: '审核订单', code: 'cage_reservation:audit' },
+      { name: '完成订单', code: 'cage_reservation:complete' },
+      { name: '取消订单', code: 'cage_reservation:cancel' },
+      // 笼位管理
+      {
+        name: '笼位管理',
+        code: 'cage:list',
+        children: [
+          { name: '新增笼位', code: 'cage:create' },
+          { name: '编辑笼位', code: 'cage:update' },
+          { name: '删除笼位', code: 'cage:delete' },
+        ]
+      },
+      // 笼位用途管理
+      {
+        name: '用途管理',
+        code: 'cage_purpose:list',
+        children: [
+          { name: '新增用途', code: 'cage_purpose:create' },
+          { name: '编辑用途', code: 'cage_purpose:update' },
+          { name: '删除用途', code: 'cage_purpose:delete' },
+        ]
+      },
+      // 时间段管理
+      {
+        name: '时间段管理',
+        code: 'cage_time_slot:list',
+        children: [
+          { name: '新增时间段', code: 'cage_time_slot:create' },
+          { name: '编辑时间段', code: 'cage_time_slot:update' },
+          { name: '删除时间段', code: 'cage_time_slot:delete' },
+        ]
+      },
     ]
   },
-  // 实验代操作
-  'experiment': {
+  // - 实验代操作
+  experiment_operation: {
     name: '实验代操作',
-    code: 'experiment',
+    code: 'experiment_operation',
     children: [
-      { code: 'experiment_operation', name: '实验订单' },
-      { code: 'operation_content', name: '操作内容' },
-      { code: 'experiment_time_slot', name: '实验时间段' }
+      { name: '代操作订单', code: 'experiment_operation:list' },
+      { name: '订单详情', code: 'experiment_operation:detail' },
+      { name: '新增订单', code: 'experiment_operation:create' },
+      { name: '编辑订单', code: 'experiment_operation:update' },
+      { name: '审核订单', code: 'experiment_operation:audit' },
+      { name: '完成订单', code: 'experiment_operation:complete' },
+      { name: '取消订单', code: 'experiment_operation:cancel' },
+      // 操作内容管理
+      {
+        name: '操作内容管理',
+        code: 'operation_content:list',
+        children: [
+          { name: '新增操作内容', code: 'operation_content:create' },
+          { name: '编辑操作内容', code: 'operation_content:update' },
+          { name: '删除操作内容', code: 'operation_content:delete' },
+        ]
+      },
+      // 时间段管理
+      {
+        name: '时间段管理',
+        code: 'experiment_time_slot:list',
+        children: [
+          { name: '新增时间段', code: 'experiment_time_slot:create' },
+          { name: '编辑时间段', code: 'experiment_time_slot:update' },
+          { name: '删除时间段', code: 'experiment_time_slot:delete' },
+        ]
+      },
     ]
   },
-  // 动物订购
-  'animal': {
+  // - 动物订购
+  animal_order: {
     name: '动物订购',
-    code: 'animal',
+    code: 'animal_order',
     children: [
-      { code: 'animal_order', name: '动物订单' },
-      { code: 'animal_brand', name: '动物品牌' },
-      { code: 'animal_variety', name: '动物品系' },
-      { code: 'animal_specification', name: '动物规格' },
-      { code: 'animal_requirement', name: '动物需求' }
+      { name: '订购订单', code: 'animal_order:list' },
+      { name: '订单详情', code: 'animal_order:detail' },
+      { name: '新增订单', code: 'animal_order:create' },
+      { name: '编辑订单', code: 'animal_order:update' },
+      { name: '审核订单', code: 'animal_order:audit' },
+      { name: '完成订单', code: 'animal_order:complete' },
+      { name: '取消订单', code: 'animal_order:cancel' },
+      // 动物品牌管理
+      {
+        name: '品牌管理',
+        code: 'animal_brand:list',
+        children: [
+          { name: '新增品牌', code: 'animal_brand:create' },
+          { name: '编辑品牌', code: 'animal_brand:update' },
+          { name: '删除品牌', code: 'animal_brand:delete' },
+        ]
+      },
+      // 动物种类/品系管理
+      {
+        name: '品系管理',
+        code: 'animal_variety:list',
+        children: [
+          { name: '新增品系', code: 'animal_variety:create' },
+          { name: '编辑品系', code: 'animal_variety:update' },
+          { name: '删除品系', code: 'animal_variety:delete' },
+        ]
+      },
+      // 动物规格管理
+      {
+        name: '规格管理',
+        code: 'animal_specification:list',
+        children: [
+          { name: '新增规格', code: 'animal_specification:create' },
+          { name: '编辑规格', code: 'animal_specification:update' },
+          { name: '删除规格', code: 'animal_specification:delete' },
+        ]
+      },
+      // 动物要求管理
+      {
+        name: '要求管理',
+        code: 'animal_requirement:list',
+        children: [
+          { name: '新增要求', code: 'animal_requirement:create' },
+          { name: '编辑要求', code: 'animal_requirement:update' },
+          { name: '删除要求', code: 'animal_requirement:delete' },
+        ]
+      },
     ]
   },
-  // 试剂耗材订购
-  'reagent': {
+  // - 试剂耗材订购
+  reagent_order: {
     name: '试剂耗材订购',
-    code: 'reagent',
+    code: 'reagent_order',
     children: [
-      { code: 'reagent_order', name: '试剂订单' },
-      { code: 'reagent_brand', name: '试剂品牌' },
-      { code: 'reagent_specification', name: '试剂规格' }
+      { name: '订购订单', code: 'reagent_order:list' },
+      { name: '订单详情', code: 'reagent_order:detail' },
+      { name: '新增订单', code: 'reagent_order:create' },
+      { name: '编辑订单', code: 'reagent_order:update' },
+      { name: '审核订单', code: 'reagent_order:audit' },
+      { name: '完成订单', code: 'reagent_order:complete' },
+      { name: '取消订单', code: 'reagent_order:cancel' },
+      // 试剂品牌管理
+      {
+        name: '品牌管理',
+        code: 'reagent_brand:list',
+        children: [
+          { name: '新增品牌', code: 'reagent_brand:create' },
+          { name: '编辑品牌', code: 'reagent_brand:update' },
+          { name: '删除品牌', code: 'reagent_brand:delete' },
+        ]
+      },
+      // 试剂规格管理
+      {
+        name: '规格管理',
+        code: 'reagent_specification:list',
+        children: [
+          { name: '新增规格', code: 'reagent_specification:create' },
+          { name: '编辑规格', code: 'reagent_specification:update' },
+          { name: '删除规格', code: 'reagent_specification:delete' },
+        ]
+      },
     ]
   },
-  // 内容管理
-  'content': {
+  // - 内容管理
+  content: {
     name: '内容管理',
     code: 'content',
     children: [
-      { code: 'case', name: '案例管理' },
-      { code: 'company_info', name: '公司信息' }
+      { name: '案例管理', code: 'case:list' },
+      { name: '案例详情', code: 'case:detail' },
+      { name: '新增案例', code: 'case:create' },
+      { name: '编辑案例', code: 'case:update' },
+      { name: '删除案例', code: 'case:delete' },
+      { name: '公司信息', code: 'company_info' }
     ]
   },
-  // 通用配置管理
-  'config': {
+  // - 通用配置管理
+  config: {
     name: '通用配置管理',
     code: 'config',
     children: [
-      { code: 'handler', name: '负责人管理' },
-      { code: 'environment_type', name: '环境类型' },
-      { code: 'animal_type', name: '动物类型' }
+      {
+        name: '负责人管理',
+        code: 'handler:list',
+        children: [
+          { name: '新增负责人', code: 'handler:create' },
+          { name: '编辑负责人', code: 'handler:update' },
+          { name: '删除负责人', code: 'handler:delete' },
+        ]
+      },
+      {
+        name: '环境类型',
+        code: 'environment_type:list',
+        children: [
+          { name: '新增环境类型', code: 'environment_type:create' },
+          { name: '编辑环境类型', code: 'environment_type:update' },
+          { name: '删除环境类型', code: 'environment_type:delete' },
+        ]
+      },
+      {
+        name: '动物类型',
+        code: 'animal_type:list',
+        children: [
+          { name: '新增动物类型', code: 'animal_type:create' },
+          { name: '编辑动物类型', code: 'animal_type:update' },
+          { name: '删除动物类型', code: 'animal_type:delete' },
+        ]
+      },
     ]
   },
-  // 系统管理
-  'system': {
+  // - 系统管理
+  system: {
     name: '系统管理',
     code: 'system',
     children: [
-      { code: 'administrator', name: '管理员管理' },
-      { code: 'role', name: '角色管理' },
-      { code: 'permission', name: '权限管理' },
-      { code: 'system_config', name: '系统配置' }
+      {
+        name: '管理员管理',
+        code: 'administrator:list',
+        children: [
+          { name: '新增管理员', code: 'administrator:create' },
+          { name: '编辑管理员', code: 'administrator:update' },
+          { name: '删除管理员', code: 'administrator:delete' },
+        ]
+      },
+      {
+        name: '角色管理',
+        code: 'role:list',
+        children: [
+          { name: '新增角色', code: 'role:create' },
+          { name: '编辑角色', code: 'role:update' },
+          { name: '删除角色', code: 'role:delete' },
+        ]
+      },
+      { name: '系统配置', code: 'system_config' },
     ]
   }
 };
 
 /**
- * 权限操作类型映射
+ * 递归处理权限节点
+ * @param {Object} node - 权限节点
+ * @param {String|Number} parentCode - 父级权限代码（0 表示顶级）
+ * @param {Number} sortOrder - 排序号
+ * @param {Array} result - 结果数组
+ * @returns {Number} 下一个排序号
  */
-const ACTION_NAMES = {
-  'list': '列表',
-  'detail': '详情',
-  'create': '创建',
-  'update': '更新',
-  'delete': '删除',
-  'audit': '审核',
-  'complete': '完成',
-  'cancel': '取消',
-  'view': '查看',
-  'statistics': '统计'
-};
+function processPermissionNode(node, parentCode, sortOrder, result) {
+  // 添加当前节点
+  result.push({
+    name: node.name,
+    code: node.code,
+    parent_code: parentCode, // 暂时用 code 标识父级，后续会转换为 id
+    sort_order: sortOrder
+  });
 
-/**
- * HTTP方法映射
- */
-const METHOD_MAP = {
-  'GET': 'GET',
-  'POST': 'POST',
-  'PUT': 'PUT',
-  'DELETE': 'DELETE'
-};
-
-/**
- * 手动定义的权限列表（用于路由文件中没有但需要创建的权限）
- */
-const MANUAL_PERMISSIONS = [
-  {
-    code: 'dashboard:view',
-    method: 'GET',
-    path: '/api/support/dashboard',
-    name: '工作台查看'
-  }
-];
-
-/**
- * 解析路由文件，提取权限信息
- */
-function parseRoutes() {
-  const routeFile = path.join(__dirname, '../routes/admin.js');
-  const content = fs.readFileSync(routeFile, 'utf-8');
-  
-  const permissions = [];
-  // 匹配路由定义，支持多个中间件
-  // 例如: router.get('/users', adminAuth, permission('user:list'), userController.getUserList);
-  const routeRegex = /router\.(get|post|put|delete)\('([^']+)'[^)]*permission\('([^']+)'\)/gi;
-  let match;
-  
-  while ((match = routeRegex.exec(content)) !== null) {
-    const method = match[1].toUpperCase();
-    const routePath = match[2];
-    const code = match[3];
-    
-    // 跳过权限管理本身的权限（避免循环）
-    if (code.startsWith('permission:')) {
-      continue;
-    }
-    
-    permissions.push({
-      method,
-      path: `/api/support${routePath}`,
-      code,
-      name: generatePermissionName(code)
+  // 递归处理子节点
+  if (node.children && node.children.length > 0) {
+    let childSortOrder = 1;
+    node.children.forEach(child => {
+      childSortOrder = processPermissionNode(child, node.code, childSortOrder, result);
     });
   }
-  
-  // 添加手动定义的权限（如果路由文件中没有）
-  const existingCodes = new Set(permissions.map(p => p.code));
-  MANUAL_PERMISSIONS.forEach(perm => {
-    if (!existingCodes.has(perm.code)) {
-      permissions.push(perm);
-    }
-  });
-  
+
+  return sortOrder + 1;
+}
+
+/**
+ * 扁平化权限树结构（支持多级权限）
+ * @param {Object} config - 权限配置对象
+ * @returns {Array} 扁平化的权限列表
+ */
+function flattenPermissions(config) {
+  const permissions = [];
+  let parentSortOrder = 1;
+
+  for (const key in config) {
+    const module = config[key];
+    parentSortOrder = processPermissionNode(module, 0, parentSortOrder, permissions);
+  }
+
   return permissions;
 }
 
 /**
- * 根据权限代码生成权限名称
+ * 主函数
  */
-function generatePermissionName(code) {
-  const parts = code.split(':');
-  if (parts.length !== 2) {
-    return code;
-  }
-  
-  const [module, action] = parts;
-  const actionName = ACTION_NAMES[action] || action;
-  
-  // 查找模块名称
-  for (const group of Object.values(PERMISSION_GROUPS)) {
-    for (const child of group.children) {
-      if (child.code === module) {
-        return `${child.name}${actionName}`;
-      }
-    }
-  }
-  
-  // 如果找不到，使用模块代码
-  return `${module}${actionName}`;
-}
-
-/**
- * 构建权限树结构
- */
-function buildPermissionTree(permissions) {
-  const tree = [];
-  const parentMap = new Map(); // 存储父级权限ID
-  
-  // 先创建父级权限（模块）
-  for (const [key, group] of Object.entries(PERMISSION_GROUPS)) {
-    const parent = {
-      name: group.name,
-      code: group.code,
-      resource: '',
-      method: '',
-      parentId: 0,
-      sortOrder: Object.keys(PERMISSION_GROUPS).indexOf(key) + 1,
-      children: []
-    };
-    tree.push(parent);
-    parentMap.set(group.code, parent);
-  }
-  
-  // 创建二级权限（子模块）
-  for (const [key, group] of Object.entries(PERMISSION_GROUPS)) {
-    const parent = parentMap.get(group.code);
-    group.children.forEach((child, index) => {
-      const childPermission = {
-        name: child.name,
-        code: child.code,
-        resource: '',
-        method: '',
-        parentId: parent.code,
-        sortOrder: index + 1,
-        children: []
-      };
-      parent.children.push(childPermission);
-      parentMap.set(child.code, childPermission);
-    });
-  }
-  
-  // 添加具体权限（操作）
-  permissions.forEach(perm => {
-    const parts = perm.code.split(':');
-    if (parts.length !== 2) return;
-    
-    const [module, action] = parts;
-    const modulePerm = parentMap.get(module);
-    
-    if (modulePerm) {
-      const actionName = ACTION_NAMES[action] || action;
-      const permission = {
-        name: `${modulePerm.name}${actionName}`,
-        code: perm.code,
-        resource: perm.path,
-        method: perm.method,
-        parentId: modulePerm.code,
-        sortOrder: modulePerm.children.length + 1
-      };
-      modulePerm.children.push(permission);
-    }
-  });
-  
-  return tree;
-}
-
-/**
- * 扁平化权限树（用于数据库插入）
- * 返回按层级分组的权限列表
- */
-function flattenPermissionTree(tree) {
-  const level1 = []; // 一级权限（模块）
-  const level2 = []; // 二级权限（子模块）
-  const level3 = []; // 三级权限（具体操作）
-  
-  for (const node of tree) {
-    // 一级权限
-    level1.push({
-      name: node.name,
-      code: node.code,
-      resource: node.resource || '',
-      method: node.method || '',
-      parentId: 0,
-      sortOrder: node.sortOrder || 0
-    });
-    
-    // 处理子节点
-    if (node.children && node.children.length > 0) {
-      for (const child of node.children) {
-        // 判断是二级还是三级权限（有resource的是三级）
-        if (child.resource) {
-          // 三级权限（具体操作）
-          level3.push({
-            name: child.name,
-            code: child.code,
-            resource: child.resource,
-            method: child.method,
-            parentId: child.parentId, // 使用code作为临时标识
-            sortOrder: child.sortOrder || 0
-          });
-        } else {
-          // 二级权限（子模块）
-          level2.push({
-            name: child.name,
-            code: child.code,
-            resource: child.resource || '',
-            method: child.method || '',
-            parentId: child.parentId, // 使用code作为临时标识
-            sortOrder: child.sortOrder || 0
-          });
-          
-          // 处理三级权限
-          if (child.children && child.children.length > 0) {
-            for (const grandChild of child.children) {
-              level3.push({
-                name: grandChild.name,
-                code: grandChild.code,
-                resource: grandChild.resource,
-                method: grandChild.method,
-                parentId: grandChild.parentId, // 使用code作为临时标识
-                sortOrder: grandChild.sortOrder || 0
-              });
-            }
-          }
-        }
-      }
-    }
-  }
-  
-  return { level1, level2, level3 };
-}
-
-/**
- * 批量创建权限
- */
-async function createPermissions() {
+async function main() {
   try {
-    logger.info('开始生成权限数据...');
+    console.log('========================================');
+    console.log('开始批量生成权限数据');
+    console.log('========================================\n');
+
+    // 1. 连接数据库
+    await db.sequelize.authenticate();
+    logger.info('Database connection established successfully');
+    console.log('✓ 数据库连接成功\n');
+
+    // 2. 清空现有权限数据
+    console.log('正在清空现有权限数据...');
     
-    // 解析路由
-    const routePermissions = parseRoutes();
-    logger.info(`从路由文件中提取到 ${routePermissions.length} 个权限`);
+    // 先删除角色权限关联
+    await db.RolePermission.destroy({ where: {} });
+    console.log('✓ 清空角色权限关联');
     
-    // 构建权限树
-    const tree = buildPermissionTree(routePermissions);
+    // 再删除权限数据
+    await db.Permission.destroy({ where: {} });
+    console.log('✓ 清空权限数据\n');
+
+    // 3. 扁平化权限配置
+    console.log('正在处理权限配置...');
+    const flatPermissions = flattenPermissions(PERMISSION_CONFIG);
+    console.log(`✓ 共处理 ${flatPermissions.length} 条权限\n`);
+
+    // 4. 创建权限数据（按层级顺序创建）
+    console.log('开始导入权限数据...');
     
-    // 扁平化权限树
-    const { level1, level2, level3 } = flattenPermissionTree(tree);
-    
-    logger.info(`权限统计：一级权限 ${level1.length} 个，二级权限 ${level2.length} 个，三级权限 ${level3.length} 个`);
-    
-    // 开始事务
-    const transaction = await db.sequelize.transaction();
-    
-    try {
-      const permissionIdMap = new Map(); // 存储 code -> id 的映射
-      
-      // 插入一级权限
-      for (const perm of level1) {
-        const [permission, created] = await db.Permission.findOrCreate({
-          where: { code: perm.code },
-          defaults: {
-            name: perm.name,
-            code: perm.code,
-            resource: perm.resource,
-            method: perm.method,
-            parent_id: 0,
-            sort_order: perm.sortOrder
-          },
-          transaction
-        });
+    const parentIdMap = new Map(); // code -> id 映射
+    let createdCount = 0;
+    const totalCount = flatPermissions.length;
+
+    // 循环创建，每次只创建父级已存在的权限
+    let remaining = [...flatPermissions];
+    let lastCreatedCount = 0;
+
+    while (remaining.length > 0) {
+      const toCreate = [];
+      const stillRemaining = [];
+
+      for (const perm of remaining) {
+        // 检查父级是否已创建
+        const parentId = perm.parent_code === 0 ? 0 : parentIdMap.get(perm.parent_code);
         
-        // 如果权限已存在，但 parent_id 不正确，需要更新
-        if (!created && permission.parent_id !== 0) {
-          await permission.update({
-            parent_id: 0,
-            sort_order: perm.sortOrder
-          }, { transaction });
-          logger.info(`更新一级权限的父级: ${perm.name} (${perm.code})`);
-        }
-        
-        permissionIdMap.set(perm.code, permission.id);
-        if (created) {
-          logger.info(`创建一级权限: ${perm.name} (${perm.code})`);
+        if (perm.parent_code === 0 || parentId) {
+          // 父级已存在，可以创建
+          toCreate.push({ ...perm, parentId });
         } else {
-          logger.info(`权限已存在: ${perm.name} (${perm.code})`);
+          // 父级还未创建，等待下一轮
+          stillRemaining.push(perm);
         }
       }
-      
-      // 插入二级权限
-      for (const perm of level2) {
-        // 检查该权限是否已经作为一级权限存在
-        const existingAsLevel1 = permissionIdMap.get(perm.code);
-        if (existingAsLevel1) {
-          // 如果已经作为一级权限存在，跳过（避免将一级权限降级为二级权限）
-          logger.info(`跳过：${perm.name} (${perm.code}) 已作为一级权限存在`);
-          continue;
-        }
-        
-        const parentId = permissionIdMap.get(perm.parentId);
-        if (!parentId) {
-          logger.warn(`找不到父级权限: ${perm.parentId}`);
-          continue;
-        }
-        
-        const [permission, created] = await db.Permission.findOrCreate({
-          where: { code: perm.code },
-          defaults: {
-            name: perm.name,
-            code: perm.code,
-            resource: perm.resource,
-            method: perm.method,
-            parent_id: parentId,
-            sort_order: perm.sortOrder
-          },
-          transaction
+
+      // 如果本轮没有创建任何权限，说明有循环依赖或错误
+      if (toCreate.length === 0) {
+        console.error('\n✗ 错误: 检测到权限依赖问题，以下权限无法创建：');
+        stillRemaining.forEach(perm => {
+          console.error(`  - ${perm.name} (${perm.code})，父级: ${perm.parent_code}`);
+        });
+        throw new Error('权限依赖错误，无法继续创建');
+      }
+
+      // 创建本轮可以创建的权限
+      for (const perm of toCreate) {
+        const created = await db.Permission.create({
+          name: perm.name,
+          code: perm.code,
+          parent_id: perm.parentId,
+          sort_order: perm.sort_order
         });
         
-        // 如果权限已存在，但 parent_id 不正确，需要更新
-        if (!created && permission.parent_id !== parentId) {
-          await permission.update({
-            parent_id: parentId,
-            sort_order: perm.sortOrder
-          }, { transaction });
-          logger.info(`更新二级权限的父级: ${perm.name} (${perm.code})`);
-        }
+        parentIdMap.set(perm.code, created.id);
+        createdCount++;
         
-        permissionIdMap.set(perm.code, permission.id);
-        if (created) {
-          logger.info(`创建二级权限: ${perm.name} (${perm.code})`);
-        } else {
-          logger.info(`权限已存在: ${perm.name} (${perm.code})`);
-        }
+        // 判断层级
+        const level = perm.parent_code === 0 ? 1 : 
+          (parentIdMap.has(perm.parent_code) && 
+           flatPermissions.find(p => p.code === perm.parent_code)?.parent_code === 0) ? 2 : 3;
+        const levelLabel = level === 1 ? '一级' : level === 2 ? '二级' : level === 3 ? '三级' : `${level}级`;
+        
+        console.log(`✓ [${createdCount}/${totalCount}] 创建${levelLabel}权限: ${perm.name} (${perm.code})`);
       }
-      
-      // 插入三级权限（具体操作权限）
-      for (const perm of level3) {
-        const parentId = permissionIdMap.get(perm.parentId);
-        if (!parentId) {
-          logger.warn(`找不到父级权限: ${perm.parentId}`);
-          continue;
-        }
-        
-        const [permission, created] = await db.Permission.findOrCreate({
-          where: { code: perm.code },
-          defaults: {
-            name: perm.name,
-            code: perm.code,
-            resource: perm.resource,
-            method: perm.method,
-            parent_id: parentId,
-            sort_order: perm.sortOrder
-          },
-          transaction
-        });
-        
-        // 如果权限已存在，但 parent_id 不正确，需要更新
-        if (!created && permission.parent_id !== parentId) {
-          await permission.update({
-            parent_id: parentId,
-            sort_order: perm.sortOrder
-          }, { transaction });
-          logger.info(`更新三级权限的父级: ${perm.name} (${perm.code})`);
-        }
-        
-        if (created) {
-          logger.info(`创建三级权限: ${perm.name} (${perm.code})`);
-        } else {
-          logger.info(`权限已存在: ${perm.name} (${perm.code})`);
-        }
-      }
-      
-      await transaction.commit();
-      logger.info('✅ 权限生成完成！');
-      
-      // 输出统计信息
-      const totalCount = await db.Permission.count();
-      logger.info(`当前数据库中共有 ${totalCount} 个权限`);
-      
-    } catch (err) {
-      await transaction.rollback();
-      throw err;
+
+      remaining = stillRemaining;
     }
-    
-  } catch (err) {
-    logger.error(`生成权限失败: ${err.message}`);
-    console.error(err);
+
+    console.log('\n========================================');
+    console.log(`✓ 权限生成完成！共创建 ${createdCount} 条权限`);
+    console.log('========================================');
+
+    process.exit(0);
+  } catch (error) {
+    console.error('\n导入失败：', error);
+    logger.error(`Permission generation failed: ${error.message}`);
     process.exit(1);
   }
 }
 
-// 执行脚本
-if (require.main === module) {
-  createPermissions()
-    .then(() => {
-      logger.info('脚本执行完成');
-      process.exit(0);
-    })
-    .catch(err => {
-      logger.error(`脚本执行失败: ${err.message}`);
-      console.error(err);
-      process.exit(1);
-    });
-}
-
-module.exports = { createPermissions, parseRoutes, buildPermissionTree };
+// 运行主函数
+main();

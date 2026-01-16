@@ -316,69 +316,6 @@ const getPermissionList = async (req, res, next) => {
   }
 };
 
-/**
- * 创建权限
- */
-const createPermission = async (req, res, next) => {
-  try {
-    const { name, code, resource, method, parent_id, sort_order } = req.body;
-    
-    // 参数验证
-    if (!name) {
-      return response.badRequest(res, '权限名称不能为空');
-    }
-    if (!code) {
-      return response.badRequest(res, '代码不能为空');
-    }
-
-    const permission = await authService.createPermission({
-      name,
-      code,
-      resource,
-      method,
-      parentId: parent_id || 0,
-      sortOrder: sort_order || 0
-    });
-    return response.success(res, permission, '创建成功');
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * 更新权限
- */
-const updatePermission = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { name, code, resource, method, parent_id, sort_order } = req.body;
-
-    await authService.updatePermission(id, {
-      name,
-      code,
-      resource,
-      method,
-      parentId: parent_id,
-      sortOrder: sort_order
-    });
-    return response.success(res, null, '更新成功');
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * 删除权限
- */
-const deletePermission = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    await authService.deletePermission(id);
-    return response.success(res, null, '删除成功');
-  } catch (err) {
-    next(err);
-  }
-};
 
 module.exports = {
   login,
@@ -399,8 +336,5 @@ module.exports = {
   updateRole,
   deleteRole,
   // 权限管理
-  getPermissionList,
-  createPermission,
-  updatePermission,
-  deletePermission
+  getPermissionList
 };

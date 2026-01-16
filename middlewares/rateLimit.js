@@ -1,8 +1,8 @@
 /*
  * @Author: diaochan
  * @Date: 2026-01-09 14:08:24
- * @LastEditors: diaochan
- * @LastEditTime: 2026-01-13 16:57:42
+ * @LastEditors: diaochan diaochan@seatent.com
+ * @LastEditTime: 2026-01-16 16:26:01
  * @Description: 
  */
 /**
@@ -48,7 +48,7 @@ const apiLimiter = createRateLimit({
  */
 const loginLimiter = createRateLimit({
   windowMs: 15 * 60 * 1000,  // 15分钟
-  max: 5,                     // 最多5次尝试
+  max: 25,                     // 最多5次尝试
   message: '登录尝试次数过多，请15分钟后再试'
 });
 

@@ -41,9 +41,6 @@ router.delete('/roles/:id', adminAuth, permission('role:delete'), authController
 
 // ==================== 权限管理 ====================
 router.get('/permissions', adminAuth, permission('permission:list'), authController.getPermissionList);
-router.post('/permissions', adminAuth, permission('permission:create'), authController.createPermission);
-router.put('/permissions/:id', adminAuth, permission('permission:update'), authController.updatePermission);
-router.delete('/permissions/:id', adminAuth, permission('permission:delete'), authController.deletePermission);
 
 // ==================== 用户管理 ====================
 router.get('/users', adminAuth, permission('user:list'), userController.getUserList);

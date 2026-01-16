@@ -73,9 +73,7 @@ const login = async (username, password, ip) => {
           admin.role.permissions.map(p => ({
             id: p.id,
             name: p.name,
-            code: p.code,
-            resource: p.resource,
-            method: p.method
+            code: p.code
           })) : []
       }
     };
@@ -613,8 +611,6 @@ const buildPermissionTree = (permissions, parentId = 0) => {
       id: p.id,
       name: p.name,
       code: p.code,
-      resource: p.resource,
-      method: p.method,
       parent_id: p.parent_id,
       sort_order: p.sort_order,
       children: buildPermissionTree(permissions, p.id)
@@ -639,135 +635,6 @@ const getPermissionList = async () => {
   }
 };
 
-/**
- * 创建权限
- * @param {Object} data - 权限数据
- * @returns {Promise<Object>}
- */
-const createPermission = async (data) => {
-  try {
-    const { name, code, resource, method, parentId = 0, sortOrder = 0 } = data;
-
-    // 验证权限代码是否已存在
-    const existing = await db.Permission.findOne({ where: { code } });
-    if (existing) {
-      throw new Error('权限代码已存在');
-    }
-
-    // 验证父级权限是否存在（如果parentId不为0）
-    if (parentId !== 0) {
-      const parent = await db.Permission.findByPk(parentId);
-      if (!parent) {
-        throw new Error('父级权限不存在');
-      }
-    }
-
-    const permission = await db.Permission.create({
-      name,
-      code,
-      resource,
-      method,
-      parent_id: parentId,
-      sort_order: sortOrder
-    });
-
-    logger.info(`Permission created: id=${permission.id}, code=${code}`);
-    return permission;
-  } catch (err) {
-    logger.error(`Create permission failed: ${err.message}`);
-    throw err;
-  }
-};
-
-/**
- * 更新权限
- * @param {Number} id - 权限ID
- * @param {Object} data - 更新数据
- * @returns {Promise<void>}
- */
-const updatePermission = async (id, data) => {
-  try {
-    const permission = await db.Permission.findByPk(id);
-    if (!permission) {
-      throw new Error('权限不存在');
-    }
-
-    const updateData = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.code !== undefined) {
-      // 验证权限代码是否已存在（排除自己）
-      const existing = await db.Permission.findOne({
-        where: { code: data.code, id: { [Op.ne]: id } }
-      });
-      if (existing) {
-        throw new Error('权限代码已存在');
-      }
-      updateData.code = data.code;
-    }
-    if (data.resource !== undefined) updateData.resource = data.resource;
-    if (data.method !== undefined) updateData.method = data.method;
-    if (data.parentId !== undefined) {
-      // 验证父级权限是否存在（如果parentId不为0）
-      if (data.parentId !== 0) {
-        const parent = await db.Permission.findByPk(data.parentId);
-        if (!parent) {
-          throw new Error('父级权限不存在');
-        }
-      }
-      updateData.parent_id = data.parentId;
-    }
-    if (data.sortOrder !== undefined) updateData.sort_order = data.sortOrder;
-
-    await permission.update(updateData);
-    logger.info(`Permission updated: id=${id}`);
-  } catch (err) {
-    logger.error(`Update permission failed: ${err.message}`);
-    throw err;
-  }
-};
-
-/**
- * 删除权限
- * @param {Number} id - 权限ID
- * @returns {Promise<void>}
- */
-const deletePermission = async (id) => {
-  const transaction = await db.sequelize.transaction();
-  try {
-    const permission = await db.Permission.findByPk(id, { transaction });
-    if (!permission) {
-      throw new Error('权限不存在');
-    }
-
-    // 检查是否有子权限
-    const childCount = await db.Permission.count({
-      where: { parent_id: id },
-      transaction
-    });
-    if (childCount > 0) {
-      throw new Error('该权限存在子权限，无法删除');
-    }
-
-    // 检查是否有角色正在使用此权限
-    const rolePermissionCount = await db.RolePermission.count({
-      where: { permission_id: id },
-      transaction
-    });
-    if (rolePermissionCount > 0) {
-      throw new Error('该权限正在被使用，无法删除');
-    }
-
-    // 删除权限
-    await permission.destroy({ transaction });
-
-    await transaction.commit();
-    logger.info(`Permission deleted: id=${id}`);
-  } catch (err) {
-    await transaction.rollback();
-    logger.error(`Delete permission failed: ${err.message}`);
-    throw err;
-  }
-};
 
 module.exports = {
   login,
@@ -787,8 +654,5 @@ module.exports = {
   updateRole,
   deleteRole,
   // 权限管理
-  getPermissionList,
-  createPermission,
-  updatePermission,
-  deletePermission
+  getPermissionList
 };

@@ -22,16 +22,6 @@ module.exports = (sequelize) => {
       unique: true,
       comment: '权限代码'
     },
-    resource: {
-      type: DataTypes.STRING(200),
-      allowNull: false,
-      comment: '资源路径（路由）'
-    },
-    method: {
-      type: DataTypes.STRING(10),
-      allowNull: false,
-      comment: '请求方法：GET/POST/PUT/DELETE'
-    },
     parent_id: {
       type: DataTypes.INTEGER.UNSIGNED,
       defaultValue: 0,
