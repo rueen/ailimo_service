@@ -11,7 +11,8 @@ const ORDER_PREFIX = {
   CAGE: 'CG',           // 笼位租赁
   EXPERIMENT: 'EX',     // 实验代操作
   ANIMAL: 'AN',         // 动物订购
-  REAGENT: 'RG'         // 试剂耗材
+  REAGENT: 'RG',        // 试剂耗材
+  USER: 'U'             // 用户编号
 };
 
 /**
@@ -30,34 +31,43 @@ async function generateOrderSn(prefix, transaction = null) {
   // 构建查询条件
   const pattern = `${prefix}${dateStr}%`;
   
-  // 根据不同订单类型查询对应表
-  let tableName;
+  // 根据不同订单类型查询对应表和字段
+  let tableName, fieldName;
   switch (prefix) {
     case ORDER_PREFIX.EQUIPMENT:
       tableName = 'equipment_reservations';
+      fieldName = 'order_sn';
       break;
     case ORDER_PREFIX.CAGE:
       tableName = 'cage_reservations';
+      fieldName = 'order_sn';
       break;
     case ORDER_PREFIX.EXPERIMENT:
       tableName = 'experiment_operations';
+      fieldName = 'order_sn';
       break;
     case ORDER_PREFIX.ANIMAL:
       tableName = 'animal_orders';
+      fieldName = 'order_sn';
       break;
     case ORDER_PREFIX.REAGENT:
       tableName = 'reagent_orders';
+      fieldName = 'order_sn';
+      break;
+    case ORDER_PREFIX.USER:
+      tableName = 'users';
+      fieldName = 'user_no';
       break;
     default:
       throw new Error(`未知的订单类型前缀: ${prefix}`);
   }
   
   try {
-    // 查询今日该类型订单的最大序号（使用 FOR UPDATE 锁定，防止并发问题）
+    // 查询今日该类型的最大序号（使用 FOR UPDATE 锁定，防止并发问题）
     const [result] = await db.sequelize.query(
-      `SELECT COALESCE(MAX(CAST(RIGHT(order_sn, 4) AS UNSIGNED)), 0) as max_seq
+      `SELECT COALESCE(MAX(CAST(RIGHT(${fieldName}, 4) AS UNSIGNED)), 0) as max_seq
        FROM ${tableName}
-       WHERE order_sn LIKE :pattern
+       WHERE ${fieldName} LIKE :pattern
        FOR UPDATE`,
       {
         replacements: { pattern },
@@ -70,17 +80,27 @@ async function generateOrderSn(prefix, transaction = null) {
     const maxSeq = parseInt(result.max_seq, 10) || 0;
     const nextSeq = maxSeq + 1;
     
-    // 生成完整订单号：前缀 + 日期 + 序号（4位，不足补0）
-    const orderSn = `${prefix}${dateStr}${nextSeq.toString().padStart(4, '0')}`;
+    // 生成完整编号：前缀 + 日期 + 序号（4位，不足补0）
+    const sn = `${prefix}${dateStr}${nextSeq.toString().padStart(4, '0')}`;
     
-    return orderSn;
+    return sn;
   } catch (error) {
-    console.error('生成订单号失败:', error);
-    throw new Error('生成订单号失败');
+    console.error('生成编号失败:', error);
+    throw new Error('生成编号失败');
   }
+}
+
+/**
+ * 生成用户编号（简化调用）
+ * @param {Object} transaction - 可选的事务对象
+ * @returns {Promise<String>} 用户编号，格式：U + 年月日 + 4位序号，如 U202601160001
+ */
+async function generateUserNo(transaction = null) {
+  return generateOrderSn(ORDER_PREFIX.USER, transaction);
 }
 
 module.exports = {
   ORDER_PREFIX,
-  generateOrderSn
+  generateOrderSn,
+  generateUserNo
 };

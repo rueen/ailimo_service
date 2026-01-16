@@ -11,6 +11,12 @@ module.exports = (sequelize) => {
       autoIncrement: true,
       comment: '用户ID'
     },
+    user_no: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      unique: true,
+      comment: '用户编号'
+    },
     name: {
       type: DataTypes.STRING(50),
       allowNull: false,
@@ -74,6 +80,7 @@ module.exports = (sequelize) => {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     indexes: [
+      { fields: ['user_no'] },
       { fields: ['phone'] },
       { fields: ['organization_id'] },
       { fields: ['research_group_id'] },

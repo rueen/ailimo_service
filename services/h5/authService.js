@@ -113,6 +113,7 @@ const login = async (phone, code) => {
       token,
       user: {
         id: user.id,
+        userNo: user.user_no,
         name: user.name,
         phone: user.phone,
         organization: user.organization,
@@ -133,6 +134,8 @@ const login = async (phone, code) => {
  * @returns {Promise<Object>}
  */
 const register = async (userData) => {
+  const transaction = await db.sequelize.transaction();
+  
   try {
     const { name, phone, code, organization_id, research_group_id, province_id, city_id, district_id, address } = userData;
 
@@ -166,11 +169,16 @@ const register = async (userData) => {
       }
     }
 
+    // 生成用户编号
+    const { generateUserNo } = require('../../utils/orderSn');
+    const userNo = await generateUserNo(transaction);
+
     // 标记验证码已使用
-    await smsCode.update({ is_used: 1 });
+    await smsCode.update({ is_used: 1 }, { transaction });
 
     // 创建用户
     const user = await db.User.create({
+      user_no: userNo,
       name,
       phone,
       organization_id,
@@ -181,14 +189,17 @@ const register = async (userData) => {
       address,
       status: 1,
       audit_status: 0 // 待审核
-    });
+    }, { transaction });
 
-    logger.info(`User registered: ${phone}`);
+    await transaction.commit();
+    logger.info(`User registered: ${phone}, user_no: ${userNo}`);
     return {
       message: '注册成功，等待管理员审核',
-      userId: user.id
+      userId: user.id,
+      userNo: userNo
     };
   } catch (err) {
+    await transaction.rollback();
     logger.error(`User register failed: ${err.message}`);
     throw err;
   }

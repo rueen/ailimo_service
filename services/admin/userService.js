@@ -114,6 +114,8 @@ const getUserDetail = async (userId) => {
  * @returns {Promise<Object>}
  */
 const createUser = async (userData, adminId) => {
+  const transaction = await db.sequelize.transaction();
+  
   try {
     // 检查手机号是否已存在
     const existingUser = await db.User.findOne({ where: { phone: userData.phone } });
@@ -149,12 +151,17 @@ const createUser = async (userData, adminId) => {
       }
     }
 
+    // 生成用户编号
+    const { generateUserNo } = require('../../utils/orderSn');
+    const userNo = await generateUserNo(transaction);
+
     // 如果未传入审核状态，管理端创建的用户默认审核通过
     const auditStatus = userData.audit_status !== undefined ? userData.audit_status : 1;
     
     // 构建创建数据
     const createData = {
       ...userData,
+      user_no: userNo,
       audit_status: auditStatus,
       status: userData.status !== undefined ? userData.status : 1
     };
@@ -165,11 +172,13 @@ const createUser = async (userData, adminId) => {
       createData.audit_by = adminId;
     }
 
-    const user = await db.User.create(createData);
+    const user = await db.User.create(createData, { transaction });
 
-    logger.info(`User created by admin: userId=${user.id}, auditStatus=${auditStatus}, by=${adminId}`);
+    await transaction.commit();
+    logger.info(`User created by admin: userId=${user.id}, userNo=${userNo}, auditStatus=${auditStatus}, by=${adminId}`);
     return user;
   } catch (err) {
+    await transaction.rollback();
     logger.error(`Create user failed: ${err.message}`);
     throw err;
   }
