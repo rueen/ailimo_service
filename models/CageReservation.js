@@ -11,6 +11,22 @@ module.exports = (sequelize) => {
       autoIncrement: true,
       comment: '订单ID'
     },
+    order_sn: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      unique: true,
+      comment: '订单号'
+    },
+    source: {
+      type: DataTypes.TINYINT,
+      allowNull: false,
+      defaultValue: 0,
+      comment: '订单来源：0-用户创建 1-管理员创建'
+    },
+    created_by_admin_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      comment: '创建管理员ID（仅管理员创建时有值）'
+    },
     cage_id: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
@@ -86,10 +102,13 @@ module.exports = (sequelize) => {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     indexes: [
+      { fields: ['order_sn'], unique: true },
       { fields: ['cage_id'] },
       { fields: ['user_id'] },
       { fields: ['reservation_date'] },
-      { fields: ['status'] }
+      { fields: ['status'] },
+      { fields: ['source'] },
+      { fields: ['created_by_admin_id'] }
     ],
     comment: '笼位租赁订单表'
   });

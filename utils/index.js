@@ -7,6 +7,8 @@ const crypto = require('./crypto');
 const jwt = require('./jwt');
 const sms = require('./sms');
 const upload = require('./upload');
+const constants = require('./constants');
+const orderSn = require('./orderSn');
 
 module.exports = {
   response,
@@ -14,5 +16,7 @@ module.exports = {
   crypto,
   jwt,
   sms,
-  upload
+  upload,
+  constants,
+  orderSn
 };

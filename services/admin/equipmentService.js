@@ -271,9 +271,10 @@ const getReservationDetail = async (id) => {
 /**
  * 创建设备预约订单（管理端）
  * @param {Object} data - 订单数据
+ * @param {Number} adminId - 创建订单的管理员ID（可选，管理员创建时传入）
  * @returns {Promise<Object>}
  */
-const createReservation = async (data) => {
+const createReservation = async (data, adminId = null) => {
   const transaction = await db.sequelize.transaction();
   
   try {
@@ -303,12 +304,21 @@ const createReservation = async (data) => {
       throw new Error('所选时间段部分或全部已被预约');
     }
 
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.EQUIPMENT, transaction);
+
     // 创建订单（待审核状态）
+    data.order_sn = orderSn;
     data.status = 0;
+    data.source = adminId ? ORDER_SOURCE.ADMIN : ORDER_SOURCE.USER;
+    data.created_by_admin_id = adminId || null;
+    
     const reservation = await db.EquipmentReservation.create(data, { transaction });
     
     await transaction.commit();
-    logger.info(`Equipment reservation created: id=${reservation.id}`);
+    logger.info(`Equipment reservation created: id=${reservation.id}, sn=${orderSn}, source=${data.source}`);
     
     return reservation;
   } catch (err) {

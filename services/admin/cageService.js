@@ -482,7 +482,7 @@ const getReservationDetail = async (id) => {
  * @param {Object} data - 订单数据
  * @returns {Promise<Object>}
  */
-const createReservation = async (data) => {
+const createReservation = async (data, adminId = null) => {
   const transaction = await db.sequelize.transaction();
   
   try {
@@ -529,14 +529,22 @@ const createReservation = async (data) => {
       }
     }
 
+    // 生成订单号
+    const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
+    const { ORDER_SOURCE } = require('../../utils/constants');
+    const orderSn = await generateOrderSn(ORDER_PREFIX.CAGE, transaction);
+
     // 自动分配笼位ID
     data.cage_id = cage.id;
+    data.order_sn = orderSn;
     data.status = 0; // 待审核
+    data.source = adminId ? ORDER_SOURCE.ADMIN : ORDER_SOURCE.USER;
+    data.created_by_admin_id = adminId || null;
 
     const reservation = await db.CageReservation.create(data, { transaction });
     
     await transaction.commit();
-    logger.info(`Cage reservation created: id=${reservation.id}, cage_id=${cage.id}`);
+    logger.info(`Cage reservation created: id=${reservation.id}, sn=${orderSn}, cage_id=${cage.id}, source=${data.source}`);
     
     return reservation;
   } catch (error) {
