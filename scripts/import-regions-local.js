@@ -180,9 +180,11 @@ const main = async () => {
     await db.Region.sync({ force: false });
     console.log('✓ 表准备完成\n');
 
-    // 3. 清空现有数据
+    // 3. 清空现有数据（禁用外键检查以避免约束问题）
     console.log('正在清空现有数据...');
+    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     await db.Region.destroy({ where: {}, truncate: true });
+    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     console.log('✓ 清空完成\n');
 
     // 4. 读取数据

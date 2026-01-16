@@ -24,7 +24,7 @@ const DATA_SOURCES = {
 const fetchData = async (url) => {
   try {
     console.log(`正在下载：${url}`);
-    const response = await axios.get(url, { timeout: 30000 });
+    const response = await axios.get(url, { timeout: 120000 }); // 120秒超时（增加到2分钟）
     console.log(`✓ 下载成功，共 ${response.data.length} 条数据`);
     return response.data;
   } catch (error) {
@@ -150,9 +150,11 @@ const main = async () => {
     await db.Region.sync({ force: false });
     console.log('✓ 表准备完成\n');
 
-    // 2. 清空现有数据
+    // 2. 清空现有数据（禁用外键检查以避免约束问题）
     console.log('正在清空现有数据...');
+    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     await db.Region.destroy({ where: {}, truncate: true });
+    await db.sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
     console.log('✓ 清空完成\n');
 
     // 3. 下载数据
