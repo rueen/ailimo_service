@@ -15,9 +15,9 @@ const { Op } = require('sequelize');
  */
 const getCaseList = async (params) => {
   try {
-    const { page = 1, pageSize = 10, projectName, status } = params;
+    const { page = 1, pageSize = 10, project_name, status } = params;
     const where = {};
-    if (projectName) where.project_name = { [Op.like]: `%${projectName}%` };
+    if (project_name) where.project_name = { [Op.like]: `%${project_name}%` };
     if (status !== undefined) where.status = status;
 
     const offset = (page - 1) * pageSize;
