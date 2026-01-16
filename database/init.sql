@@ -57,7 +57,20 @@ INSERT INTO `system_configs` (`config_key`, `config_value`, `description`, `crea
 ('experiment_advance_days', '7', '实验代操作提前预约天数（单位：天）', NOW(), NOW());
 
 -- ==================== 8. 默认公司信息 ====================
-INSERT INTO `company_info` (`id`, `created_at`, `updated_at`) VALUES (1, NOW(), NOW());
+INSERT INTO `company_info` (`id`, `content`, `created_at`, `updated_at`) VALUES (
+  1,
+  JSON_OBJECT(
+    'company_name', '',
+    'company_address', '',
+    'contact_phone', '',
+    'email', '',
+    'work_time', '',
+    'company_intro', '',
+    'service_concept', ''
+  ),
+  NOW(),
+  NOW()
+);
 
 -- ==================== 9. 默认环境类型 ====================
 INSERT INTO `environment_types` (`name`, `created_at`, `updated_at`) VALUES

@@ -9,35 +9,12 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER.UNSIGNED,
       primaryKey: true,
       autoIncrement: true,
-      comment: '公司信息ID'
+      comment: '公司信息ID（固定为1）'
     },
-    company_name: {
-      type: DataTypes.STRING(200),
-      comment: '公司名称'
-    },
-    company_address: {
-      type: DataTypes.STRING(500),
-      comment: '公司地址'
-    },
-    contact_phone: {
-      type: DataTypes.STRING(50),
-      comment: '联系电话'
-    },
-    email: {
-      type: DataTypes.STRING(100),
-      comment: '电子邮箱'
-    },
-    work_time: {
-      type: DataTypes.STRING(200),
-      comment: '工作时间'
-    },
-    company_intro: {
-      type: DataTypes.TEXT,
-      comment: '公司简介'
-    },
-    service_concept: {
-      type: DataTypes.TEXT,
-      comment: '服务理念'
+    content: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      comment: '公司信息内容（JSON格式，包含所有字段）'
     }
   }, {
     tableName: 'company_info',

@@ -123,9 +123,22 @@ const getCompanyInfo = async () => {
   try {
     let info = await db.CompanyInfo.findByPk(1);
     if (!info) {
-      info = await db.CompanyInfo.create({ id: 1 });
+      // 如果不存在，创建默认记录
+      info = await db.CompanyInfo.create({ 
+        id: 1,
+        content: {
+          company_name: '',
+          company_address: '',
+          contact_phone: '',
+          email: '',
+          work_time: '',
+          company_intro: '',
+          service_concept: ''
+        }
+      });
     }
-    return info;
+    // 返回 content 内容
+    return info.content || {};
   } catch (error) {
     logger.error('Get company info failed:', error);
     throw error;
@@ -134,19 +147,25 @@ const getCompanyInfo = async () => {
 
 /**
  * 更新公司信息
- * @param {Object} data - 更新数据
+ * @param {Object} data - 更新数据（JSON 对象）
  * @returns {Promise<Object>}
  */
 const updateCompanyInfo = async (data) => {
   try {
     let info = await db.CompanyInfo.findByPk(1);
     if (!info) {
-      info = await db.CompanyInfo.create({ id: 1, ...data });
+      // 如果不存在，创建新记录
+      info = await db.CompanyInfo.create({ 
+        id: 1,
+        content: data
+      });
     } else {
-      await info.update(data);
+      // 更新 content 字段
+      await info.update({ content: data });
     }
     logger.info('Company info updated');
-    return info;
+    // 返回更新后的 content
+    return info.content;
   } catch (error) {
     logger.error('Update company info failed:', error);
     throw error;

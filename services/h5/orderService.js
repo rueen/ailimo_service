@@ -501,15 +501,16 @@ const getCompanyInfo = async () => {
     if (!info) {
       return {
         company_name: '',
-        address: '',
-        phone: '',
+        company_address: '',
+        contact_phone: '',
         email: '',
-        working_hours: '',
-        introduction: '',
-        service_philosophy: ''
+        work_time: '',
+        company_intro: '',
+        service_concept: ''
       };
     }
-    return info;
+    // 返回 content JSON 对象
+    return info.content || {};
   } catch (error) {
     logger.error('Get company info failed:', error);
     throw error;
