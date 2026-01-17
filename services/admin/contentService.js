@@ -133,7 +133,9 @@ const getCompanyInfo = async () => {
           email: '',
           work_time: '',
           company_intro: '',
-          service_concept: ''
+          service_concept: '',
+          banner_image: [],
+          video_url: ''
         }
       });
     }

@@ -66,7 +66,9 @@ INSERT INTO `company_info` (`id`, `content`, `created_at`, `updated_at`) VALUES 
     'email', '',
     'work_time', '',
     'company_intro', '',
-    'service_concept', ''
+    'service_concept', '',
+    'banner_image', JSON_ARRAY(),
+    'video_url', ''
   ),
   NOW(),
   NOW()
