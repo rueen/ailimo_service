@@ -606,7 +606,7 @@ const getOrderDetail = async (userId, type, orderId) => {
         model = db.CageReservation;
         include = [
           { model: db.Cage, as: 'cage' },
-          { model: db.AnimalType, as: 'animalType' },
+          { model: db.AnimalType, as: 'animal_type' },
           { model: db.EnvironmentType, as: 'environment' },
           { model: db.CagePurpose, as: 'purpose' },
           { model: db.Handler, as: 'handler' }
@@ -615,8 +615,8 @@ const getOrderDetail = async (userId, type, orderId) => {
       case 'experiment':
         model = db.ExperimentOperation;
         include = [
-          { model: db.OperationContent, as: 'operationContent' },
-          { model: db.AnimalType, as: 'animalType' },
+          { model: db.OperationContent, as: 'operation_content' },
+          { model: db.AnimalType, as: 'animal_type' },
           { model: db.Handler, as: 'handler' }
         ];
         break;
@@ -957,7 +957,7 @@ const getCageList = async () => {
     return await db.Cage.findAll({
       where: { status: 1 },
       include: [
-        { model: db.AnimalType, as: 'animalType', attributes: ['id', 'name'] },
+        { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
         { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] }
       ],
       order: [['created_at', 'DESC']]
