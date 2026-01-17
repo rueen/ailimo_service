@@ -79,7 +79,7 @@ const getMyOrders = async (req, res, next) => {
       result.list,
       result.total,
       result.page,
-      result.pageSize
+      result.page_size
     );
   } catch (err) {
     next(err);

@@ -52,9 +52,9 @@ const createEquipmentReservation = async (userId, data) => {
 
     // 4. 验证预约日期不能超过提前预约天数限制
     const advanceDaysConfig = await db.SystemConfig.findOne({
-      where: { key: 'equipment_advance_days' }
+      where: { config_key: 'equipment_advance_days' }
     });
-    const advanceDays = advanceDaysConfig ? parseInt(advanceDaysConfig.value) : 7;
+    const advanceDays = advanceDaysConfig ? parseInt(advanceDaysConfig.config_value) : 7;
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + advanceDays);
     if (reservationDate > maxDate) {
@@ -380,82 +380,208 @@ const createReagentOrder = async (userId, data) => {
  */
 const getMyOrders = async (userId, params) => {
   try {
-    const { page = 1, pageSize = 10, type, status } = params;
+    const { page = 1, page_size = 10, type, status, start_date, end_date } = params;
 
-    if (!type) {
-      throw new Error('订单类型不能为空');
+    // 如果指定了type，只查询该类型的订单
+    if (type) {
+      return await getOrdersByType(userId, type, { page, page_size, status, start_date, end_date });
     }
 
-    let model, include;
-    switch (type) {
-      case 'equipment':
-        model = db.EquipmentReservation;
-        include = [
-          { model: db.Equipment, as: 'equipment', attributes: ['id', 'name'] },
-          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-        ];
-        break;
-      case 'cage':
-        model = db.CageReservation;
-        include = [
-          { model: db.Cage, as: 'cage', attributes: ['id', 'quantity'] },
-          { model: db.AnimalType, as: 'animalType', attributes: ['id', 'name'] },
-          { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
-          { model: db.CagePurpose, as: 'purpose', attributes: ['id', 'name'] },
-          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-        ];
-        break;
-      case 'experiment':
-        model = db.ExperimentOperation;
-        include = [
-          { model: db.OperationContent, as: 'operationContent', attributes: ['id', 'name'] },
-          { model: db.AnimalType, as: 'animalType', attributes: ['id', 'name'] },
-          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-        ];
-        break;
-      case 'animal':
-        model = db.AnimalOrder;
-        include = [
-          { model: db.AnimalBrand, as: 'brand', attributes: ['id', 'name'] },
-          { model: db.AnimalVariety, as: 'variety', attributes: ['id', 'name'] },
-          { model: db.AnimalSpecification, as: 'specification', attributes: ['id', 'name'] },
-          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-        ];
-        break;
-      case 'reagent':
-        model = db.ReagentOrder;
-        include = [
-          { model: db.ReagentBrand, as: 'brand', attributes: ['id', 'name'] },
-          { model: db.ReagentSpecification, as: 'specification', attributes: ['id', 'name'] },
-          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-        ];
-        break;
-      default:
-        throw new Error('订单类型不正确');
+    // 未指定type，聚合查询所有类型的订单
+    const allOrders = [];
+    const types = ['equipment', 'cage', 'experiment', 'animal', 'reagent'];
+    
+    for (const orderType of types) {
+      const orders = await getOrdersByType(userId, orderType, { status, start_date, end_date }, false);
+      allOrders.push(...orders);
     }
 
-    const where = { user_id: userId };
-    if (status !== undefined) where.status = status;
+    // 按创建时间倒序排列
+    allOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    const offset = (page - 1) * pageSize;
-    const { count, rows } = await model.findAndCountAll({
-      where,
-      include,
-      offset,
-      limit: parseInt(pageSize),
-      order: [['created_at', 'DESC']]
-    });
+    // 分页
+    const offset = (page - 1) * page_size;
+    const total = allOrders.length;
+    const list = allOrders.slice(offset, offset + parseInt(page_size));
 
-    return { 
-      list: rows, 
-      total: count, 
-      page: parseInt(page), 
-      pageSize: parseInt(pageSize) 
+    return {
+      list,
+      total,
+      page: parseInt(page),
+      page_size: parseInt(page_size),
+      total_pages: Math.ceil(total / page_size)
     };
   } catch (error) {
     logger.error('Get my orders failed:', error);
     throw error;
   }
+};
+
+/**
+ * 根据类型获取订单
+ * @param {Number} userId - 用户ID
+ * @param {String} type - 订单类型
+ * @param {Object} filters - 过滤条件
+ * @param {Boolean} paginate - 是否分页
+ * @returns {Promise<Object|Array>}
+ */
+const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
+  const { page = 1, page_size = 10, status, start_date, end_date } = filters;
+
+  let model, include, typeConfig;
+  const typeMap = {
+    equipment: '设备租赁',
+    cage: '笼位租赁',
+    experiment: '实验代操作',
+    animal: '动物订购',
+    reagent: '试剂耗材订购'
+  };
+
+  switch (type) {
+    case 'equipment':
+      model = db.EquipmentReservation;
+      include = [
+        { model: db.Equipment, as: 'equipment', attributes: ['id', 'name'] },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+      ];
+      typeConfig = { dateField: 'reservation_date', titleField: 'equipment.name' };
+      break;
+    case 'cage':
+      model = db.CageReservation;
+      include = [
+        { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
+        { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+      ];
+      typeConfig = { dateField: 'reservation_date' };
+      break;
+    case 'experiment':
+      model = db.ExperimentOperation;
+      include = [
+        { model: db.OperationContent, as: 'operation_content', attributes: ['id', 'name'] },
+        { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+      ];
+      typeConfig = { dateField: 'reservation_date' };
+      break;
+    case 'animal':
+      model = db.AnimalOrder;
+      include = [
+        { model: db.AnimalBrand, as: 'brand', attributes: ['id', 'name'] },
+        { model: db.AnimalVariety, as: 'variety', attributes: ['id', 'name'] },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+      ];
+      typeConfig = { dateField: 'delivery_date', titleField: 'variety.name' };
+      break;
+    case 'reagent':
+      model = db.ReagentOrder;
+      include = [
+        { model: db.ReagentBrand, as: 'brand', attributes: ['id', 'name'] },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+      ];
+      typeConfig = { dateField: 'delivery_date', titleField: 'name' };
+      break;
+    default:
+      throw new Error('订单类型不正确');
+  }
+
+  const where = { user_id: userId };
+  if (status !== undefined) where.status = status;
+  if (start_date || end_date) {
+    where[typeConfig.dateField] = {};
+    if (start_date) where[typeConfig.dateField][Op.gte] = start_date;
+    if (end_date) where[typeConfig.dateField][Op.lte] = end_date;
+  }
+
+  const queryOptions = {
+    where,
+    include,
+    order: [['created_at', 'DESC']]
+  };
+
+  if (paginate) {
+    const offset = (page - 1) * page_size;
+    queryOptions.offset = offset;
+    queryOptions.limit = parseInt(page_size);
+
+    const { count, rows } = await model.findAndCountAll(queryOptions);
+    
+    const list = rows.map(order => formatOrderForList(order, type, typeConfig));
+    
+    return {
+      list,
+      total: count,
+      page: parseInt(page),
+      page_size: parseInt(page_size),
+      total_pages: Math.ceil(count / page_size)
+    };
+  } else {
+    // 不分页，返回所有数据
+    const rows = await model.findAll(queryOptions);
+    return rows.map(order => formatOrderForList(order, type, typeConfig));
+  }
+};
+
+/**
+ * 格式化订单数据用于列表显示
+ * @param {Object} order - 订单对象
+ * @param {String} type - 订单类型
+ * @param {Object} typeConfig - 类型配置
+ * @returns {Object}
+ */
+const formatOrderForList = (order, type, typeConfig) => {
+  const typeNameMap = {
+    equipment: '设备租赁',
+    cage: '笼位租赁',
+    experiment: '实验代操作',
+    animal: '动物订购',
+    reagent: '试剂耗材订购'
+  };
+
+  const statusTextMap = {
+    0: '待审核',
+    1: '进行中',
+    2: '已拒绝',
+    3: '已完成',
+    4: '已取消'
+  };
+
+  let title, date;
+  const orderData = order.toJSON ? order.toJSON() : order;
+
+  switch (type) {
+    case 'equipment':
+      title = orderData.equipment?.name || '';
+      date = orderData.reservation_date;
+      break;
+    case 'cage':
+      title = `${orderData.animal_type?.name || ''}-${orderData.environment?.name || ''}-${orderData.quantity}个`;
+      date = orderData.reservation_date;
+      break;
+    case 'experiment':
+      title = `${orderData.operation_content?.name || ''}-${orderData.animal_type?.name || ''}-${orderData.quantity}只`;
+      date = orderData.reservation_date;
+      break;
+    case 'animal':
+      title = orderData.variety?.name || '';
+      date = orderData.delivery_date;
+      break;
+    case 'reagent':
+      title = orderData.name || '';
+      date = orderData.delivery_date;
+      break;
+  }
+
+  return {
+    id: orderData.id,
+    type,
+    type_name: typeNameMap[type],
+    title,
+    date,
+    status: orderData.status,
+    status_text: statusTextMap[orderData.status] || '未知',
+    created_at: orderData.created_at
+  };
 };
 
 /**
