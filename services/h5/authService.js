@@ -119,7 +119,7 @@ const login = async (phone, code) => {
         organization: user.organization,
         research_group: user.research_group,
         status: user.status,
-        auditStatus: user.audit_status
+        audit_status: user.audit_status
       }
     };
   } catch (err) {

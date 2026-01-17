@@ -106,8 +106,14 @@ const getOrderDetail = async (req, res, next) => {
  */
 const getCaseList = async (req, res, next) => {
   try {
-    const list = await orderService.getCaseList();
-    return response.success(res, list);
+    const { page, page_size, project_name, project_summary } = req.query;
+    const result = await orderService.getCaseList({
+      page,
+      page_size,
+      project_name,
+      project_summary
+    });
+    return response.success(res, result);
   } catch (err) {
     next(err);
   }

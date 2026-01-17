@@ -28,6 +28,15 @@ const isValidPhone = (phone) => {
 };
 
 /**
+ * 验证验证码格式（6位数字）
+ * @param {String} code - 验证码
+ * @returns {Boolean}
+ */
+const isValidCode = (code) => {
+  return /^\d{6}$/.test(code);
+};
+
+/**
  * 验证地区ID是否存在
  * @param {Number} provinceId - 省份ID
  * @param {Number} cityId - 城市ID
@@ -115,6 +124,7 @@ const validateRegionIdsOptional = async (provinceId, cityId, districtId) => {
 module.exports = {
   isValidPassword,
   isValidPhone,
+  isValidCode,
   validateRegionIds,
   validateRegionIdsOptional
 };

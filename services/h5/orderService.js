@@ -537,15 +537,43 @@ const getOrderDetail = async (userId, type, orderId) => {
 
 /**
  * 获取案例列表（仅显示已发布的）
- * @returns {Promise<Array>}
+ * @param {Object} params - 查询参数
+ * @param {Number} params.page - 页码
+ * @param {Number} params.page_size - 每页数量
+ * @param {String} params.project_name - 项目名称（可选）
+ * @param {String} params.project_summary - 项目概述（可选）
+ * @returns {Promise<Object>}
  */
-const getCaseList = async () => {
+const getCaseList = async (params = {}) => {
   try {
-    return await db.Case.findAll({
-      where: { status: 1 },
-      attributes: ['id', 'project_name', 'summary', 'images', 'created_at'],
-      order: [['created_at', 'DESC']]
+    const { page = 1, page_size = 10, project_name, project_summary } = params;
+    const offset = (page - 1) * page_size;
+    
+    // 构建查询条件
+    const where = { status: 1 };
+    if (project_name) {
+      where.project_name = { [db.Sequelize.Op.like]: `%${project_name}%` };
+    }
+    if (project_summary) {
+      where.project_summary = { [db.Sequelize.Op.like]: `%${project_summary}%` };
+    }
+    
+    // 查询列表和总数
+    const { count, rows } = await db.Case.findAndCountAll({
+      where,
+      attributes: ['id', 'project_name', 'project_summary', 'images', 'created_at'],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(page_size),
+      offset: offset
     });
+    
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      page_size: parseInt(page_size),
+      total_pages: Math.ceil(count / page_size)
+    };
   } catch (error) {
     logger.error('Get case list failed:', error);
     throw error;
@@ -747,7 +775,7 @@ const getEquipmentAvailableSlots = async (equipmentId, date) => {
     // 查询所有启用的时间段配置
     const allTimeSlots = await db.EquipmentTimeSlot.findAll({
       where: { status: 1 },
-      attributes: ['id', 'start_time', 'end_time', 'display_time', 'description'],
+      attributes: ['id', 'start_time', 'end_time', 'description'],
       order: [['sort_order', 'ASC']]
     });
 
@@ -771,14 +799,21 @@ const getEquipmentAvailableSlots = async (equipmentId, date) => {
     });
 
     // 构建返回数据
-    const result = allTimeSlots.map(slot => ({
-      id: slot.id,
-      startTime: slot.start_time,
-      endTime: slot.end_time,
-      display_time: slot.display_time,
-      description: slot.description || '',
-      available: !bookedSlots.has(slot.display_time)
-    }));
+    const result = allTimeSlots.map(slot => {
+      // 格式化时间显示（去掉秒，如 "09:00:00" -> "09:00"）
+      const startTime = slot.start_time.substring(0, 5);
+      const endTime = slot.end_time.substring(0, 5);
+      const displayTime = `${startTime}-${endTime}`;
+      
+      return {
+        id: slot.id,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        display_time: displayTime,
+        description: slot.description || '',
+        available: !bookedSlots.has(displayTime)
+      };
+    });
 
     return result;
   } catch (error) {
@@ -1003,13 +1038,13 @@ const getAdvanceDaysConfigs = async () => {
   try {
     const configs = await db.SystemConfig.findAll({
       where: {
-        key: ['equipment_advance_days', 'cage_advance_days', 'experiment_advance_days']
+        config_key: ['equipment_advance_days', 'cage_advance_days', 'experiment_advance_days']
       }
     });
 
     const result = {};
     configs.forEach(config => {
-      result[config.key] = parseInt(config.value) || 7;
+      result[config.config_key] = parseInt(config.config_value) || 7;
     });
 
     return {

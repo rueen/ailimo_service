@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2026-01-09 14:08:24
  * @LastEditors: diaochan diaochan@seatent.com
- * @LastEditTime: 2026-01-16 16:26:01
+ * @LastEditTime: 2026-01-17 19:31:24
  * @Description: 
  */
 /**
@@ -40,7 +40,7 @@ const createRateLimit = (options = {}) => {
  */
 const apiLimiter = createRateLimit({
   windowMs: 60 * 1000,  // 1分钟
-  max: 300              // 最多300次请求
+  max: 500              // 最多300次请求
 });
 
 /**
