@@ -234,9 +234,49 @@ const getProfile = async (userId) => {
   }
 };
 
+/**
+ * 获取用户审核状态
+ * @param {Number} userId - 用户ID
+ * @returns {Promise<Object>}
+ */
+const getAuditStatus = async (userId) => {
+  try {
+    const user = await db.User.findByPk(userId, {
+      attributes: ['id', 'user_no', 'name', 'phone', 'audit_status', 'reject_reason', 'audit_time', 'created_at']
+    });
+
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    // 审核状态文本映射
+    const auditStatusMap = {
+      0: '待审核',
+      1: '审核通过',
+      2: '审核拒绝'
+    };
+
+    return {
+      user_id: user.id,
+      user_no: user.user_no,
+      name: user.name,
+      phone: user.phone,
+      audit_status: user.audit_status,
+      audit_status_text: auditStatusMap[user.audit_status] || '未知状态',
+      reject_reason: user.reject_reason,
+      audit_time: user.audit_time,
+      created_at: user.created_at
+    };
+  } catch (err) {
+    logger.error(`Get user audit status failed: ${err.message}`);
+    throw err;
+  }
+};
+
 module.exports = {
   sendCode,
   login,
   register,
-  getProfile
+  getProfile,
+  getAuditStatus
 };

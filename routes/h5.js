@@ -16,6 +16,7 @@ router.post('/auth/send-code', smsLimiter, authController.sendCode);
 router.post('/auth/login', authController.login);
 router.post('/auth/register', authController.register);
 router.get('/auth/profile', h5Auth, authController.getProfile);
+router.get('/auth/audit-status', h5Auth, authController.getAuditStatus);
 router.post('/auth/logout', h5Auth, authController.logout);
 
 // ==================== 地区管理（公共） ====================

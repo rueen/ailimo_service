@@ -117,6 +117,21 @@ const getProfile = async (req, res, next) => {
 };
 
 /**
+ * 获取用户审核状态
+ */
+const getAuditStatus = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+
+    const auditStatus = await authService.getAuditStatus(userId);
+
+    return response.success(res, auditStatus);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 退出登录
  */
 const logout = async (req, res, next) => {
@@ -133,5 +148,6 @@ module.exports = {
   login,
   register,
   getProfile,
+  getAuditStatus,
   logout
 };
