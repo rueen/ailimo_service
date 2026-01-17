@@ -21,21 +21,53 @@ const createEquipmentReservation = async (userId, data) => {
   try {
     const { equipment_id, reservation_date, time_slots } = data;
 
-    // 检查设备是否存在且可用，并加锁防止并发问题
+    // 1. 验证当前用户是否已登录且审核已通过
+    const user = await db.User.findByPk(userId);
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+    if (user.audit_status !== 1) {
+      throw new Error('用户审核未通过，无法提交订单');
+    }
+
+    // 2. 验证设备是否存在且启用
     const equipment = await db.Equipment.findByPk(equipment_id, { 
       transaction,
-      lock: transaction.LOCK.UPDATE  // 加悲观锁
+      lock: transaction.LOCK.UPDATE  // 加悲观锁防止并发
     });
     if (!equipment) {
       throw new Error('设备不存在');
     }
-
     if (equipment.status !== 1) {
       throw new Error('设备不可用');
     }
 
-    // 检查时间段可用性
+    // 3. 验证预约日期不能是过去的日期
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const reservationDate = new Date(reservation_date);
+    if (reservationDate < today) {
+      throw new Error('预约日期不能是过去的日期');
+    }
+
+    // 4. 验证预约日期不能超过提前预约天数限制
+    const advanceDaysConfig = await db.SystemConfig.findOne({
+      where: { key: 'equipment_advance_days' }
+    });
+    const advanceDays = advanceDaysConfig ? parseInt(advanceDaysConfig.value) : 7;
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + advanceDays);
+    if (reservationDate > maxDate) {
+      throw new Error(`预约日期不能超过${advanceDays}天`);
+    }
+
+    // 5. 验证时间段格式和有效性
     const timeSlotArray = typeof time_slots === 'string' ? JSON.parse(time_slots) : time_slots;
+    if (!Array.isArray(timeSlotArray) || timeSlotArray.length === 0) {
+      throw new Error('时间段格式错误或为空');
+    }
+
+    // 6. 检查设备在选定时间段是否已被预约（使用数据库行锁防止并发）
     for (const slot of timeSlotArray) {
       const isAvailable = await checkEquipmentAvailability(
         equipment_id,
@@ -49,7 +81,8 @@ const createEquipmentReservation = async (userId, data) => {
       }
     }
 
-    // 生成订单号
+    // 7. 自动关联当前登录用户
+    // 8. 创建订单
     const { generateOrderSn, ORDER_PREFIX } = require('../../utils/orderSn');
     const { ORDER_SOURCE } = require('../../utils/constants');
     const orderSn = await generateOrderSn(ORDER_PREFIX.EQUIPMENT, transaction);
@@ -648,18 +681,108 @@ const getExperimentTimeSlots = async () => {
 // ==================== 获取基础数据列表 ====================
 
 /**
- * 获取设备列表
+ * 获取设备列表（无需登录，无分页）
+ * @param {String} name - 可选，设备名称模糊查询
  * @returns {Promise<Array>}
  */
-const getEquipmentList = async () => {
+const getEquipmentList = async (name) => {
   try {
+    const where = { status: 1 };
+    if (name) {
+      where.name = { [Op.like]: `%${name}%` };
+    }
+    
     return await db.Equipment.findAll({
-      where: { status: 1 },
+      where,
       attributes: ['id', 'name', 'details'],
       order: [['name', 'ASC']]
     });
   } catch (error) {
     logger.error('Get equipment list failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取设备详情（无需登录）
+ * @param {Number} id - 设备ID
+ * @returns {Promise<Object>}
+ */
+const getEquipmentDetail = async (id) => {
+  try {
+    const equipment = await db.Equipment.findByPk(id, {
+      attributes: ['id', 'name', 'details']
+    });
+    
+    if (!equipment) {
+      throw new Error('设备不存在');
+    }
+    
+    return equipment;
+  } catch (error) {
+    logger.error('Get equipment detail failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * 查询设备可用时间段
+ * @param {Number} equipmentId - 设备ID
+ * @param {String} date - 查询日期
+ * @returns {Promise<Array>}
+ */
+const getEquipmentAvailableSlots = async (equipmentId, date) => {
+  try {
+    // 验证设备是否存在
+    const equipment = await db.Equipment.findByPk(equipmentId);
+    if (!equipment) {
+      throw new Error('设备不存在');
+    }
+
+    // 验证日期参数
+    if (!date) {
+      throw new Error('日期参数必填');
+    }
+
+    // 查询所有启用的时间段配置
+    const allTimeSlots = await db.EquipmentTimeSlot.findAll({
+      where: { status: 1 },
+      attributes: ['id', 'start_time', 'end_time', 'display_time', 'description'],
+      order: [['sort_order', 'ASC']]
+    });
+
+    // 查询该设备在该日期已预约的时间段（状态为待审核或进行中）
+    const reservations = await db.EquipmentReservation.findAll({
+      where: {
+        equipment_id: equipmentId,
+        reservation_date: date,
+        status: [0, 1] // 待审核和进行中
+      },
+      attributes: ['time_slots']
+    });
+
+    // 提取所有已预约的时间段
+    const bookedSlots = new Set();
+    reservations.forEach(reservation => {
+      const slots = reservation.time_slots;
+      if (Array.isArray(slots)) {
+        slots.forEach(slot => bookedSlots.add(slot));
+      }
+    });
+
+    // 构建返回数据
+    const result = allTimeSlots.map(slot => ({
+      id: slot.id,
+      startTime: slot.start_time,
+      endTime: slot.end_time,
+      display_time: slot.display_time,
+      description: slot.description || '',
+      available: !bookedSlots.has(slot.display_time)
+    }));
+
+    return result;
+  } catch (error) {
+    logger.error('Get equipment available slots failed:', error);
     throw error;
   }
 };
@@ -1065,6 +1188,8 @@ module.exports = {
   
   // 基础数据
   getEquipmentList,
+  getEquipmentDetail,
+  getEquipmentAvailableSlots,
   getCageList,
   getEnvironmentsByAnimalType,
   getAvailableTimeSlotsByType,

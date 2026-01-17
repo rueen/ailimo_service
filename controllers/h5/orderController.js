@@ -178,12 +178,40 @@ const getExperimentTimeSlots = async (req, res, next) => {
 // ==================== 基础数据查询 ====================
 
 /**
- * 获取设备列表
+ * 获取设备列表（无需登录，无分页）
  */
 const getEquipmentList = async (req, res, next) => {
   try {
-    const list = await orderService.getEquipmentList();
+    const { name } = req.query;
+    const list = await orderService.getEquipmentList(name);
     return response.success(res, list);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 获取设备详情（无需登录）
+ */
+const getEquipmentDetail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const equipment = await orderService.getEquipmentDetail(id);
+    return response.success(res, equipment);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 查询设备可用时间段
+ */
+const getEquipmentAvailableSlots = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { date } = req.query;
+    const slots = await orderService.getEquipmentAvailableSlots(id, date);
+    return response.success(res, slots);
   } catch (err) {
     next(err);
   }
@@ -429,6 +457,8 @@ module.exports = {
   
   // 基础数据
   getEquipmentList,
+  getEquipmentDetail,
+  getEquipmentAvailableSlots,
   getCageList,
   getEnvironmentsByAnimalType,
   getAvailableTimeSlotsByType,
