@@ -437,56 +437,56 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
     reagent: '试剂耗材订购'
   };
 
-  switch (type) {
-    case 'equipment':
-      model = db.EquipmentReservation;
-      include = [
-        { model: db.Equipment, as: 'equipment', attributes: ['id', 'name'] },
-        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-      ];
+    switch (type) {
+      case 'equipment':
+        model = db.EquipmentReservation;
+        include = [
+          { model: db.Equipment, as: 'equipment', attributes: ['id', 'name'] },
+          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+        ];
       typeConfig = { dateField: 'reservation_date', titleField: 'equipment.name' };
-      break;
-    case 'cage':
-      model = db.CageReservation;
-      include = [
+        break;
+      case 'cage':
+        model = db.CageReservation;
+        include = [
         { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
-        { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
-        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-      ];
+          { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
+          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+        ];
       typeConfig = { dateField: 'reservation_date' };
-      break;
-    case 'experiment':
-      model = db.ExperimentOperation;
-      include = [
+        break;
+      case 'experiment':
+        model = db.ExperimentOperation;
+        include = [
         { model: db.OperationContent, as: 'operation_content', attributes: ['id', 'name'] },
         { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
-        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-      ];
+          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+        ];
       typeConfig = { dateField: 'reservation_date' };
-      break;
-    case 'animal':
-      model = db.AnimalOrder;
-      include = [
-        { model: db.AnimalBrand, as: 'brand', attributes: ['id', 'name'] },
-        { model: db.AnimalVariety, as: 'variety', attributes: ['id', 'name'] },
-        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-      ];
+        break;
+      case 'animal':
+        model = db.AnimalOrder;
+        include = [
+          { model: db.AnimalBrand, as: 'brand', attributes: ['id', 'name'] },
+          { model: db.AnimalVariety, as: 'variety', attributes: ['id', 'name'] },
+          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+        ];
       typeConfig = { dateField: 'delivery_date', titleField: 'variety.name' };
-      break;
-    case 'reagent':
-      model = db.ReagentOrder;
-      include = [
-        { model: db.ReagentBrand, as: 'brand', attributes: ['id', 'name'] },
-        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
-      ];
+        break;
+      case 'reagent':
+        model = db.ReagentOrder;
+        include = [
+          { model: db.ReagentBrand, as: 'brand', attributes: ['id', 'name'] },
+          { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
+        ];
       typeConfig = { dateField: 'delivery_date', titleField: 'name' };
-      break;
-    default:
-      throw new Error('订单类型不正确');
-  }
+        break;
+      default:
+        throw new Error('订单类型不正确');
+    }
 
-  const where = { user_id: userId };
-  if (status !== undefined) where.status = status;
+    const where = { user_id: userId };
+    if (status !== undefined) where.status = status;
   if (start_date || end_date) {
     where[typeConfig.dateField] = {};
     if (start_date) where[typeConfig.dateField][Op.gte] = start_date;
@@ -494,9 +494,9 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
   }
 
   const queryOptions = {
-    where,
-    include,
-    order: [['created_at', 'DESC']]
+      where,
+      include,
+      order: [['created_at', 'DESC']]
   };
 
   if (paginate) {
@@ -507,11 +507,11 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
     const { count, rows } = await model.findAndCountAll(queryOptions);
     
     const list = rows.map(order => formatOrderForList(order, type, typeConfig));
-    
-    return {
+
+    return { 
       list,
-      total: count,
-      page: parseInt(page),
+      total: count, 
+      page: parseInt(page), 
       page_size: parseInt(page_size),
       total_pages: Math.ceil(count / page_size)
     };
@@ -593,6 +593,14 @@ const formatOrderForList = (order, type, typeConfig) => {
  */
 const getOrderDetail = async (userId, type, orderId) => {
   try {
+    const typeNameMap = {
+      equipment: '设备租赁',
+      cage: '笼位租赁',
+      experiment: '实验代操作',
+      animal: '动物订购',
+      reagent: '试剂耗材订购'
+    };
+
     let model, include;
     switch (type) {
       case 'equipment':
@@ -652,7 +660,12 @@ const getOrderDetail = async (userId, type, orderId) => {
       throw new Error('订单不存在或无权访问');
     }
 
-    return order;
+    // 转换为普通对象并添加 type 和 type_name 字段
+    const orderData = order.toJSON();
+    orderData.type = type;
+    orderData.type_name = typeNameMap[type];
+
+    return orderData;
   } catch (error) {
     logger.error('Get order detail failed:', error);
     throw error;
