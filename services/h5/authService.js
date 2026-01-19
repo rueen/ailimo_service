@@ -185,11 +185,33 @@ const register = async (userData) => {
     }, { transaction });
 
     await transaction.commit();
-    logger.info(`User registered: ${phone}, user_no: ${userNo}`);
+
+    // 重新查询用户（包含关联数据）
+    const userWithRelations = await db.User.findByPk(user.id, {
+      include: [
+        { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
+        { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] }
+      ]
+    });
+
+    // 生成Token（注册成功后自动登录）
+    const token = jwt.generateUserToken(userWithRelations);
+
+    logger.info(`User registered and logged in: ${phone}, user_no: ${userNo}, audit_status: 0`);
     return {
-      message: '注册成功，等待管理员审核',
-      userId: user.id,
-      userNo: userNo
+      message: '注册成功',
+      token,
+      user: {
+        id: userWithRelations.id,
+        userNo: userWithRelations.user_no,
+        name: userWithRelations.name,
+        phone: userWithRelations.phone,
+        organization: userWithRelations.organization,
+        research_group: userWithRelations.research_group,
+        status: userWithRelations.status,
+        audit_status: userWithRelations.audit_status,
+        reject_reason: null
+      }
     };
   } catch (err) {
     await transaction.rollback();
