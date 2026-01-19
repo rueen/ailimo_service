@@ -18,7 +18,9 @@ const PERMISSION_CONFIG = {
   dashboard: {
     name: '工作台',
     code: 'dashboard',
-    children: []
+    children: [
+      { name: '数据统计', code: 'statistics:overview' },
+    ]
   },
   
   // 一级权限：用户管理
@@ -288,7 +290,11 @@ const PERMISSION_CONFIG = {
           { name: '删除案例', code: 'case:delete' },
         ]
       },
-      { name: '公司信息', code: 'company_info' }
+      { name: '公司信息', code: 'company_info',
+        children: [
+          { name: '编辑公司信息', code: 'company_info:update' },
+        ]
+      },
     ]
   },
   // - 通用配置管理
@@ -301,6 +307,7 @@ const PERMISSION_CONFIG = {
         code: 'handler',
         children: [
           { name: '负责人列表', code: 'handler:list' },
+          { name: '负责人统计', code: 'handler:statistics' },
           { name: '新增负责人', code: 'handler:create' },
           { name: '编辑负责人', code: 'handler:update' },
           { name: '删除负责人', code: 'handler:delete' },

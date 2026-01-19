@@ -16,6 +16,7 @@ const animalOrderController = require('../controllers/admin/animalOrderControlle
 const reagentOrderController = require('../controllers/admin/reagentOrderController');
 const contentController = require('../controllers/admin/contentController');
 const configController = require('../controllers/admin/configController');
+const statisticsController = require('../controllers/admin/statisticsController');
 const regionController = require('../controllers/common/regionController');
 
 // ==================== 认证相关 ====================
@@ -251,6 +252,9 @@ router.get('/system-configs', adminAuth, configController.getAllConfigs);
 router.get('/system-configs/:key', adminAuth, configController.getConfig);
 router.put('/system-configs/:key', adminAuth, permission('system_config:update'), configController.updateConfig);
 router.get('/advance-days', adminAuth, configController.getAdvanceDaysConfigs);
+
+// ==================== 数据统计 ====================
+router.get('/statistics/overview', adminAuth, permission('statistics:overview'), statisticsController.getOverviewStatistics);
 
 // ==================== 地区管理（公共） ====================
 router.get('/regions', adminAuth, regionController.getRegionList);
