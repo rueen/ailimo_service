@@ -329,7 +329,7 @@ const getHandlerOptions = async () => {
  */
 const getHandlerStatistics = async (params = {}) => {
   try {
-    const { handler_id, page = 1, page_size = 10 } = params;
+    const { handler_id, page = 1, page_size = 10, start_date, end_date } = params;
     
     // 如果指定了负责人ID，直接查询该负责人
     if (handler_id) {
@@ -344,7 +344,7 @@ const getHandlerStatistics = async (params = {}) => {
         };
       }
       
-      const stat = await calculateHandlerStatistics(handler);
+      const stat = await calculateHandlerStatistics(handler, start_date, end_date);
       return {
         list: [stat],
         total: 1,
@@ -374,7 +374,7 @@ const getHandlerStatistics = async (params = {}) => {
 
     const statistics = [];
     for (const handler of rows) {
-      const stat = await calculateHandlerStatistics(handler);
+      const stat = await calculateHandlerStatistics(handler, start_date, end_date);
       statistics.push(stat);
     }
 
@@ -394,47 +394,59 @@ const getHandlerStatistics = async (params = {}) => {
 /**
  * 计算单个负责人的统计数据
  * @param {Object} handler - 负责人对象
+ * @param {String} start_date - 开始日期（可选）
+ * @param {String} end_date - 结束日期（可选）
  * @returns {Promise<Object>}
  */
-const calculateHandlerStatistics = async (handler) => {
+const calculateHandlerStatistics = async (handler, start_date, end_date) => {
+  const { Op } = require('sequelize');
+  
+  // 构建日期范围条件
+  const dateWhere = {};
+  if (start_date || end_date) {
+    dateWhere.created_at = {};
+    if (start_date) dateWhere.created_at[Op.gte] = start_date;
+    if (end_date) dateWhere.created_at[Op.lte] = end_date;
+  }
+
   // 设备预约统计
   const equipmentCompleted = await db.EquipmentReservation.count({
-    where: { handler_id: handler.id, status: 3 }
+    where: { handler_id: handler.id, status: 3, ...dateWhere }
   });
   const equipmentInProgress = await db.EquipmentReservation.count({
-    where: { handler_id: handler.id, status: 1 }
+    where: { handler_id: handler.id, status: 1, ...dateWhere }
   });
 
   // 笼位预约统计
   const cageCompleted = await db.CageReservation.count({
-    where: { handler_id: handler.id, status: 3 }
+    where: { handler_id: handler.id, status: 3, ...dateWhere }
   });
   const cageInProgress = await db.CageReservation.count({
-    where: { handler_id: handler.id, status: 1 }
+    where: { handler_id: handler.id, status: 1, ...dateWhere }
   });
 
   // 实验代操作统计
   const experimentCompleted = await db.ExperimentOperation.count({
-    where: { handler_id: handler.id, status: 3 }
+    where: { handler_id: handler.id, status: 3, ...dateWhere }
   });
   const experimentInProgress = await db.ExperimentOperation.count({
-    where: { handler_id: handler.id, status: 1 }
+    where: { handler_id: handler.id, status: 1, ...dateWhere }
   });
 
   // 动物订购统计
   const animalCompleted = await db.AnimalOrder.count({
-    where: { handler_id: handler.id, status: 3 }
+    where: { handler_id: handler.id, status: 3, ...dateWhere }
   });
   const animalInProgress = await db.AnimalOrder.count({
-    where: { handler_id: handler.id, status: 1 }
+    where: { handler_id: handler.id, status: 1, ...dateWhere }
   });
 
   // 试剂耗材订购统计
   const reagentCompleted = await db.ReagentOrder.count({
-    where: { handler_id: handler.id, status: 3 }
+    where: { handler_id: handler.id, status: 3, ...dateWhere }
   });
   const reagentInProgress = await db.ReagentOrder.count({
-    where: { handler_id: handler.id, status: 1 }
+    where: { handler_id: handler.id, status: 1, ...dateWhere }
   });
 
   return {

@@ -168,11 +168,13 @@ const deleteHandler = async (req, res, next) => {
  */
 const getHandlerStatistics = async (req, res, next) => {
   try {
-    const { handler_id, page, page_size } = req.query;
+    const { handler_id, page, page_size, start_date, end_date } = req.query;
     const statistics = await contentService.getHandlerStatistics({
       handler_id,
       page,
-      page_size
+      page_size,
+      start_date,
+      end_date
     });
     return response.success(res, statistics);
   } catch (err) {
