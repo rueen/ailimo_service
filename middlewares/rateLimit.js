@@ -2,7 +2,7 @@
  * @Author: diaochan
  * @Date: 2026-01-09 14:08:24
  * @LastEditors: diaochan diaochan@seatent.com
- * @LastEditTime: 2026-01-17 19:31:24
+ * @LastEditTime: 2026-01-19 17:30:44
  * @Description: 
  */
 /**
@@ -23,16 +23,21 @@ const createRateLimit = (options = {}) => {
     max: config.rateLimit.max,
     message: '请求频率过高，请稍后再试',
     standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req, res) => {
-      return response.tooManyRequests(res, '请求频率过高，请稍后再试');
-    }
+    legacyHeaders: false
   };
   
-  return rateLimit({
+  // 合并配置
+  const mergedOptions = {
     ...defaultOptions,
     ...options
-  });
+  };
+  
+  // 使用合并后的 message
+  mergedOptions.handler = (req, res) => {
+    return response.tooManyRequests(res, mergedOptions.message);
+  };
+  
+  return rateLimit(mergedOptions);
 };
 
 /**
@@ -40,7 +45,7 @@ const createRateLimit = (options = {}) => {
  */
 const apiLimiter = createRateLimit({
   windowMs: 60 * 1000,  // 1分钟
-  max: 500              // 最多300次请求
+  max: 500              // 最多500次请求
 });
 
 /**
@@ -48,7 +53,7 @@ const apiLimiter = createRateLimit({
  */
 const loginLimiter = createRateLimit({
   windowMs: 15 * 60 * 1000,  // 15分钟
-  max: 25,                     // 最多5次尝试
+  max: 5,                     // 最多5次尝试
   message: '登录尝试次数过多，请15分钟后再试'
 });
 
