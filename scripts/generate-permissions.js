@@ -292,6 +292,7 @@ const PERMISSION_CONFIG = {
       },
       { name: '公司信息', code: 'company_info',
         children: [
+          { name: '查看公司信息', code: 'company_info:view' },
           { name: '编辑公司信息', code: 'company_info:update' },
         ]
       },
