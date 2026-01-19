@@ -92,23 +92,15 @@ const login = async (phone, code) => {
       throw new Error('用户不存在，请先注册');
     }
 
-    // 检查用户状态
+    // 检查用户状态（只检查是否被禁用，审核状态不影响登录）
     if (user.status === 0) {
       throw new Error('账号已被禁用');
     }
 
-    if (user.audit_status === 0) {
-      throw new Error('账号审核中，请等待审核通过');
-    }
-
-    if (user.audit_status === 2) {
-      throw new Error(`账号审核未通过：${user.reject_reason || '未说明原因'}`);
-    }
-
-    // 生成Token
+    // 生成Token（审核中、审核未通过的用户也允许登录，由前端根据audit_status显示相应页面）
     const token = jwt.generateUserToken(user);
 
-    logger.info(`User login successful: ${phone}`);
+    logger.info(`User login successful: ${phone}, audit_status: ${user.audit_status}`);
     return {
       token,
       user: {
@@ -119,7 +111,8 @@ const login = async (phone, code) => {
         organization: user.organization,
         research_group: user.research_group,
         status: user.status,
-        audit_status: user.audit_status
+        audit_status: user.audit_status,
+        reject_reason: user.reject_reason || null  // 如果是审核未通过，返回拒绝原因
       }
     };
   } catch (err) {
