@@ -1,5 +1,5 @@
 /**
- * 笼位租赁订单模型
+ * 笼位预约订单模型
  */
 const { DataTypes } = require('sequelize');
 
@@ -110,7 +110,7 @@ module.exports = (sequelize) => {
       { fields: ['source'] },
       { fields: ['created_by_admin_id'] }
     ],
-    comment: '笼位租赁订单表'
+    comment: '笼位预约订单表'
   });
 
   return CageReservation;

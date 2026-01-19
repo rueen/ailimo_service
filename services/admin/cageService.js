@@ -1,5 +1,5 @@
 /**
- * 管理端笼位租赁服务
+ * 管理端笼位预约服务
  */
 const db = require('../../models');
 const logger = require('../../config/logger');

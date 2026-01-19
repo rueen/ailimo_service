@@ -27,7 +27,7 @@ async function syncDatabase() {
     console.log('- equipment_reservations (设备租赁订单表)');
     console.log('- equipment_time_slots (设备时间段表)');
     console.log('- cages (笼位表)');
-    console.log('- cage_reservations (笼位租赁订单表)');
+    console.log('- cage_reservations (笼位预约订单表)');
     console.log('- cage_purposes (笼位用途表)');
     console.log('- cage_time_slots (笼位时间段表)');
     console.log('- operation_contents (操作内容表)');

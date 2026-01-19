@@ -1,6 +1,6 @@
 /**
  * 用户端订单服务
- * 包括：设备租赁、笼位租赁、实验代操作、动物订购、试剂耗材订购、案例、公司信息
+ * 包括：设备租赁、笼位预约、实验代操作、动物订购、试剂耗材订购、案例、公司信息
  */
 const db = require('../../models');
 const { validator } = require('../../utils');
@@ -126,10 +126,10 @@ const checkEquipmentAvailability = async (equipmentId, date, timeSlot, transacti
   return !existingReservation;
 };
 
-// ==================== 笼位租赁订单 ====================
+// ==================== 笼位预约订单 ====================
 
 /**
- * 创建笼位租赁订单
+ * 创建笼位预约订单
  * @param {Number} userId - 用户ID
  * @param {Object} data - 订单数据
  * @returns {Promise<Object>}
@@ -431,7 +431,7 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
   let model, include, typeConfig;
   const typeMap = {
     equipment: '设备租赁',
-    cage: '笼位租赁',
+    cage: '笼位预约',
     experiment: '实验代操作',
     animal: '动物订购',
     reagent: '试剂耗材订购'
@@ -532,7 +532,7 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
 const formatOrderForList = (order, type, typeConfig) => {
   const typeNameMap = {
     equipment: '设备租赁',
-    cage: '笼位租赁',
+    cage: '笼位预约',
     experiment: '实验代操作',
     animal: '动物订购',
     reagent: '试剂耗材订购'
@@ -595,7 +595,7 @@ const getOrderDetail = async (userId, type, orderId) => {
   try {
     const typeNameMap = {
       equipment: '设备租赁',
-      cage: '笼位租赁',
+      cage: '笼位预约',
       experiment: '实验代操作',
       animal: '动物订购',
       reagent: '试剂耗材订购'
@@ -813,7 +813,7 @@ const getEquipmentTimeSlots = async () => {
 };
 
 /**
- * 获取笼位租赁时间段列表
+ * 获取笼位预约时间段列表
  * @returns {Promise<Array>}
  */
 const getCageTimeSlots = async () => {

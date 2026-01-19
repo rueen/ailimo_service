@@ -8,7 +8,7 @@ const db = require('../models');
  */
 const ORDER_PREFIX = {
   EQUIPMENT: 'EQ',      // 设备租赁
-  CAGE: 'CG',           // 笼位租赁
+  CAGE: 'CG',           // 笼位预约
   EXPERIMENT: 'EX',     // 实验代操作
   ANIMAL: 'AN',         // 动物订购
   REAGENT: 'RG',        // 试剂耗材

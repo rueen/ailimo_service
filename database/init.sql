@@ -12,7 +12,7 @@ USE ailimo;
 INSERT INTO `roles` (`id`, `name`, `description`, `created_at`, `updated_at`) VALUES
 (1, '超级管理员', '拥有所有权限', NOW(), NOW()),
 (2, '设备管理员', '负责设备租赁管理', NOW(), NOW()),
-(3, '笼位管理员', '负责笼位租赁管理', NOW(), NOW()),
+(3, '笼位管理员', '负责笼位预约管理', NOW(), NOW()),
 (4, '实验操作管理员', '负责实验代操作管理', NOW(), NOW()),
 (5, '订购管理员', '负责动物和试剂订购管理', NOW(), NOW());
 
@@ -32,7 +32,7 @@ INSERT INTO `equipment_time_slots` (`start_time`, `end_time`, `description`, `st
 ('16:00:00', '17:00:00', '', 1, 8, NOW(), NOW()),
 ('17:00:00', '18:00:00', '', 1, 9, NOW(), NOW());
 
--- ==================== 5. 笼位租赁时间段 ====================
+-- ==================== 5. 笼位预约时间段 ====================
 INSERT INTO `cage_time_slots` (`start_time`, `end_time`, `description`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES
 ('09:00:00', '10:00:00', '', 1, 1, NOW(), NOW()),
 ('10:00:00', '11:00:00', '', 1, 2, NOW(), NOW()),
@@ -53,7 +53,7 @@ INSERT INTO `experiment_time_slots` (`start_time`, `end_time`, `description`, `s
 -- ==================== 7. 系统配置（提前预约天数）====================
 INSERT INTO `system_configs` (`config_key`, `config_value`, `description`, `created_at`, `updated_at`) VALUES
 ('equipment_advance_days', '7', '设备租赁提前预约天数（单位：天）', NOW(), NOW()),
-('cage_advance_days', '7', '笼位租赁提前预约天数（单位：天）', NOW(), NOW()),
+('cage_advance_days', '7', '笼位预约提前预约天数（单位：天）', NOW(), NOW()),
 ('experiment_advance_days', '7', '实验代操作提前预约天数（单位：天）', NOW(), NOW());
 
 -- ==================== 8. 默认公司信息 ====================

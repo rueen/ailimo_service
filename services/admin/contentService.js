@@ -350,7 +350,7 @@ const getHandlerStatistics = async (handler_id) => {
         where: { handler_id: handler.id, status: 1 }
       });
 
-      // 笼位租赁统计
+      // 笼位预约统计
       const cageCompleted = await db.CageReservation.count({
         where: { handler_id: handler.id, status: 3 }
       });

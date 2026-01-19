@@ -95,9 +95,9 @@ const PERMISSION_CONFIG = {
       },
     ]
   },
-  // - 笼位租赁
+  // - 笼位预约
   cage: {
-    name: '笼位租赁',
+    name: '笼位预约',
     code: 'cage_reservation',
     children: [
       { name: '租赁订单', code: 'cage_reservation:list' },

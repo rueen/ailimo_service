@@ -1,5 +1,5 @@
 /**
- * 管理端笼位租赁控制器
+ * 管理端笼位预约控制器
  */
 const cageService = require('../../services/admin/cageService');
 const { response } = require('../../utils');

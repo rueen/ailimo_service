@@ -19,7 +19,7 @@ const createEquipmentReservation = async (req, res, next) => {
 };
 
 /**
- * 提交笼位租赁订单
+ * 提交笼位预约订单
  */
 const createCageReservation = async (req, res, next) => {
   try {
@@ -158,7 +158,7 @@ const getEquipmentTimeSlots = async (req, res, next) => {
 };
 
 /**
- * 获取笼位租赁时间段列表
+ * 获取笼位预约时间段列表
  */
 const getCageTimeSlots = async (req, res, next) => {
   try {

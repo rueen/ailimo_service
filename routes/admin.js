@@ -92,7 +92,7 @@ router.delete('/equipment-time-slots/:id', adminAuth, permission('equipment_time
 router.get('/equipment/:id/available-slots', adminAuth, equipmentController.getAvailableSlots);
 router.get('/equipment-available-slots', adminAuth, equipmentController.getAvailableSlots);
 
-// ==================== 笼位租赁 ====================
+// ==================== 笼位预约 ====================
 // 笼位管理
 router.get('/cages/environments-by-animal-type', adminAuth, cageController.getEnvironmentsByAnimalType);
 router.get('/cages/available-time-slots', adminAuth, cageController.getAvailableTimeSlotsByType);

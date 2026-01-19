@@ -46,7 +46,7 @@ db.Equipment = require('./Equipment')(sequelize);
 db.EquipmentReservation = require('./EquipmentReservation')(sequelize);
 db.EquipmentTimeSlot = require('./EquipmentTimeSlot')(sequelize);
 
-// 笼位租赁模型
+// 笼位预约模型
 db.Cage = require('./Cage')(sequelize);
 db.CageReservation = require('./CageReservation')(sequelize);
 db.CagePurpose = require('./CagePurpose')(sequelize);
@@ -111,7 +111,7 @@ db.EquipmentReservation.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' }
 db.EquipmentReservation.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
 db.EquipmentReservation.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 
-// 笼位租赁关联
+// 笼位预约关联
 db.Cage.belongsTo(db.AnimalType, { foreignKey: 'animal_type_id', as: 'animal_type' });
 db.Cage.belongsTo(db.EnvironmentType, { foreignKey: 'environment_id', as: 'environment' });
 
