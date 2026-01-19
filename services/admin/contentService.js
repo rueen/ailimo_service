@@ -327,98 +327,146 @@ const getHandlerOptions = async () => {
  * @param {Number} handler_id - 负责人ID（可选）
  * @returns {Promise<Array>}
  */
-const getHandlerStatistics = async (handler_id) => {
+const getHandlerStatistics = async (params = {}) => {
   try {
-    const handlers = handler_id 
-      ? [await db.Handler.findByPk(handler_id)]
-      : await db.Handler.findAll();
+    const { handler_id, page = 1, page_size = 10 } = params;
+    
+    // 如果指定了负责人ID，直接查询该负责人
+    if (handler_id) {
+      const handler = await db.Handler.findByPk(handler_id);
+      if (!handler) {
+        return {
+          list: [],
+          total: 0,
+          page: parseInt(page),
+          page_size: parseInt(page_size),
+          total_pages: 0
+        };
+      }
+      
+      const stat = await calculateHandlerStatistics(handler);
+      return {
+        list: [stat],
+        total: 1,
+        page: 1,
+        page_size: 1,
+        total_pages: 1
+      };
+    }
 
-    if (!handlers || handlers.length === 0) {
-      return [];
+    // 否则分页查询所有负责人
+    const offset = (page - 1) * page_size;
+    const { count, rows } = await db.Handler.findAndCountAll({
+      limit: parseInt(page_size),
+      offset: offset,
+      order: [['created_at', 'DESC']]
+    });
+
+    if (count === 0) {
+      return {
+        list: [],
+        total: 0,
+        page: parseInt(page),
+        page_size: parseInt(page_size),
+        total_pages: 0
+      };
     }
 
     const statistics = [];
-
-    for (const handler of handlers) {
-      if (!handler) continue;
-
-      // 设备预约统计
-      const equipmentCompleted = await db.EquipmentReservation.count({
-        where: { handler_id: handler.id, status: 3 }
-      });
-      const equipmentInProgress = await db.EquipmentReservation.count({
-        where: { handler_id: handler.id, status: 1 }
-      });
-
-      // 笼位预约统计
-      const cageCompleted = await db.CageReservation.count({
-        where: { handler_id: handler.id, status: 3 }
-      });
-      const cageInProgress = await db.CageReservation.count({
-        where: { handler_id: handler.id, status: 1 }
-      });
-
-      // 实验代操作统计
-      const experimentCompleted = await db.ExperimentOperation.count({
-        where: { handler_id: handler.id, status: 3 }
-      });
-      const experimentInProgress = await db.ExperimentOperation.count({
-        where: { handler_id: handler.id, status: 1 }
-      });
-
-      // 动物订购统计
-      const animalCompleted = await db.AnimalOrder.count({
-        where: { handler_id: handler.id, status: 3 }
-      });
-      const animalInProgress = await db.AnimalOrder.count({
-        where: { handler_id: handler.id, status: 1 }
-      });
-
-      // 试剂耗材订购统计
-      const reagentCompleted = await db.ReagentOrder.count({
-        where: { handler_id: handler.id, status: 3 }
-      });
-      const reagentInProgress = await db.ReagentOrder.count({
-        where: { handler_id: handler.id, status: 1 }
-      });
-
-      statistics.push({
-        handler_id: handler.id,
-        handler_name: handler.name,
-        equipment: {
-          completed: equipmentCompleted,
-          in_progress: equipmentInProgress
-        },
-        cage: {
-          completed: cageCompleted,
-          in_progress: cageInProgress
-        },
-        experiment: {
-          completed: experimentCompleted,
-          in_progress: experimentInProgress
-        },
-        animal: {
-          completed: animalCompleted,
-          in_progress: animalInProgress
-        },
-        reagent: {
-          completed: reagentCompleted,
-          in_progress: reagentInProgress
-        },
-        total: {
-          completed: equipmentCompleted + cageCompleted + experimentCompleted + 
-                     animalCompleted + reagentCompleted,
-          in_progress: equipmentInProgress + cageInProgress + experimentInProgress + 
-                       animalInProgress + reagentInProgress
-        }
-      });
+    for (const handler of rows) {
+      const stat = await calculateHandlerStatistics(handler);
+      statistics.push(stat);
     }
 
-    return statistics;
+    return {
+      list: statistics,
+      total: count,
+      page: parseInt(page),
+      page_size: parseInt(page_size),
+      total_pages: Math.ceil(count / page_size)
+    };
   } catch (error) {
     logger.error('Get handler statistics failed:', error);
     throw error;
   }
+};
+
+/**
+ * 计算单个负责人的统计数据
+ * @param {Object} handler - 负责人对象
+ * @returns {Promise<Object>}
+ */
+const calculateHandlerStatistics = async (handler) => {
+  // 设备预约统计
+  const equipmentCompleted = await db.EquipmentReservation.count({
+    where: { handler_id: handler.id, status: 3 }
+  });
+  const equipmentInProgress = await db.EquipmentReservation.count({
+    where: { handler_id: handler.id, status: 1 }
+  });
+
+  // 笼位预约统计
+  const cageCompleted = await db.CageReservation.count({
+    where: { handler_id: handler.id, status: 3 }
+  });
+  const cageInProgress = await db.CageReservation.count({
+    where: { handler_id: handler.id, status: 1 }
+  });
+
+  // 实验代操作统计
+  const experimentCompleted = await db.ExperimentOperation.count({
+    where: { handler_id: handler.id, status: 3 }
+  });
+  const experimentInProgress = await db.ExperimentOperation.count({
+    where: { handler_id: handler.id, status: 1 }
+  });
+
+  // 动物订购统计
+  const animalCompleted = await db.AnimalOrder.count({
+    where: { handler_id: handler.id, status: 3 }
+  });
+  const animalInProgress = await db.AnimalOrder.count({
+    where: { handler_id: handler.id, status: 1 }
+  });
+
+  // 试剂耗材订购统计
+  const reagentCompleted = await db.ReagentOrder.count({
+    where: { handler_id: handler.id, status: 3 }
+  });
+  const reagentInProgress = await db.ReagentOrder.count({
+    where: { handler_id: handler.id, status: 1 }
+  });
+
+  return {
+    handler_id: handler.id,
+    handler_name: handler.name,
+    equipment: {
+      completed: equipmentCompleted,
+      in_progress: equipmentInProgress
+    },
+    cage: {
+      completed: cageCompleted,
+      in_progress: cageInProgress
+    },
+    experiment: {
+      completed: experimentCompleted,
+      in_progress: experimentInProgress
+    },
+    animal: {
+      completed: animalCompleted,
+      in_progress: animalInProgress
+    },
+    reagent: {
+      completed: reagentCompleted,
+      in_progress: reagentInProgress
+    },
+    total: {
+      completed: equipmentCompleted + cageCompleted + experimentCompleted + 
+                 animalCompleted + reagentCompleted,
+      in_progress: equipmentInProgress + cageInProgress + experimentInProgress + 
+                   animalInProgress + reagentInProgress
+    }
+  };
 };
 
 // ==================== 环境类型管理 ====================
