@@ -24,7 +24,7 @@ async function syncDatabase() {
     console.log('- permissions (权限表)');
     console.log('- role_permissions (角色权限关联表)');
     console.log('- equipment (设备表)');
-    console.log('- equipment_reservations (设备租赁订单表)');
+    console.log('- equipment_reservations (设备预约订单表)');
     console.log('- equipment_time_slots (设备时间段表)');
     console.log('- cages (笼位表)');
     console.log('- cage_reservations (笼位预约订单表)');

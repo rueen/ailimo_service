@@ -65,7 +65,7 @@ router.post('/research-groups', adminAuth, permission('research_group:create'), 
 router.put('/research-groups/:id', adminAuth, permission('research_group:update'), userController.updateResearchGroup);
 router.delete('/research-groups/:id', adminAuth, permission('research_group:delete'), userController.deleteResearchGroup);
 
-// ==================== 设备租赁 ====================
+// ==================== 设备预约 ====================
 // 设备管理
 router.get('/equipment', adminAuth, permission('equipment:list'), equipmentController.getEquipmentList);
 router.get('/equipment/options', adminAuth, equipmentController.getEquipmentOptions);

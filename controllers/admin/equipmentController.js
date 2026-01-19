@@ -1,5 +1,5 @@
 /**
- * 管理端设备租赁控制器
+ * 管理端设备预约控制器
  */
 const equipmentService = require('../../services/admin/equipmentService');
 const { response } = require('../../utils');

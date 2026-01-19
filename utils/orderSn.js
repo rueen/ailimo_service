@@ -7,7 +7,7 @@ const db = require('../models');
  * 订单类型前缀映射
  */
 const ORDER_PREFIX = {
-  EQUIPMENT: 'EQ',      // 设备租赁
+  EQUIPMENT: 'EQ',      // 设备预约
   CAGE: 'CG',           // 笼位预约
   EXPERIMENT: 'EX',     // 实验代操作
   ANIMAL: 'AN',         // 动物订购

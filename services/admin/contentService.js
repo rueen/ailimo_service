@@ -342,7 +342,7 @@ const getHandlerStatistics = async (handler_id) => {
     for (const handler of handlers) {
       if (!handler) continue;
 
-      // 设备租赁统计
+      // 设备预约统计
       const equipmentCompleted = await db.EquipmentReservation.count({
         where: { handler_id: handler.id, status: 3 }
       });

@@ -7,7 +7,7 @@ const { response } = require('../../utils');
 // ==================== 订单提交 ====================
 
 /**
- * 提交设备租赁订单
+ * 提交设备预约订单
  */
 const createEquipmentReservation = async (req, res, next) => {
   try {
@@ -146,7 +146,7 @@ const getCompanyInfo = async (req, res, next) => {
 // ==================== 时间段查询 ====================
 
 /**
- * 获取设备租赁时间段列表
+ * 获取设备预约时间段列表
  */
 const getEquipmentTimeSlots = async (req, res, next) => {
   try {

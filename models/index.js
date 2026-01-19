@@ -41,7 +41,7 @@ db.EnvironmentType = require('./EnvironmentType')(sequelize);
 db.AnimalType = require('./AnimalType')(sequelize);
 db.Handler = require('./Handler')(sequelize);
 
-// 设备租赁模型
+// 设备预约模型
 db.Equipment = require('./Equipment')(sequelize);
 db.EquipmentReservation = require('./EquipmentReservation')(sequelize);
 db.EquipmentTimeSlot = require('./EquipmentTimeSlot')(sequelize);
@@ -105,7 +105,7 @@ db.Permission.belongsToMany(db.Role, {
   as: 'roles'
 });
 
-// 设备租赁关联
+// 设备预约关联
 db.EquipmentReservation.belongsTo(db.Equipment, { foreignKey: 'equipment_id', as: 'equipment' });
 db.EquipmentReservation.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.EquipmentReservation.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });

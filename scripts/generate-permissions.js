@@ -58,9 +58,9 @@ const PERMISSION_CONFIG = {
   },
   
   // TODO: 后续补充其他模块的权限配置
-  // - 设备租赁
+  // - 设备预约
   equipment: {
-    name: '设备租赁',
+    name: '设备预约',
     code: 'equipment_reservation',
     children: [
       { name: '租赁订单', code: 'equipment_reservation:list' },

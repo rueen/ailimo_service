@@ -1,5 +1,5 @@
 /**
- * 管理端设备租赁服务
+ * 管理端设备预约服务
  */
 const db = require('../../models');
 const logger = require('../../config/logger');
@@ -139,7 +139,7 @@ const getEquipmentOptions = async () => {
 };
 
 /**
- * 获取设备租赁订单列表
+ * 获取设备预约订单列表
  * @param {Object} params - 查询参数
  * @returns {Promise<Object>}
  */

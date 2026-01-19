@@ -1,5 +1,5 @@
 /**
- * 设备租赁时间段模型
+ * 设备预约时间段模型
  */
 const { DataTypes } = require('sequelize');
 
@@ -40,7 +40,7 @@ module.exports = (sequelize) => {
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    comment: '设备租赁时间段表'
+    comment: '设备预约时间段表'
   });
 
   return EquipmentTimeSlot;
