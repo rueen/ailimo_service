@@ -63,7 +63,7 @@ const PERMISSION_CONFIG = {
     name: '设备预约',
     code: 'equipment_reservation',
     children: [
-      { name: '租赁订单', code: 'equipment_reservation:list' },
+      { name: '预约订单', code: 'equipment_reservation:list' },
       { name: '订单详情', code: 'equipment_reservation:detail' },
       { name: '新增订单', code: 'equipment_reservation:create' },
       { name: '编辑订单', code: 'equipment_reservation:update' },
@@ -100,7 +100,7 @@ const PERMISSION_CONFIG = {
     name: '笼位预约',
     code: 'cage_reservation',
     children: [
-      { name: '租赁订单', code: 'cage_reservation:list' },
+      { name: '预约订单', code: 'cage_reservation:list' },
       { name: '订单详情', code: 'cage_reservation:detail' },
       { name: '新增订单', code: 'cage_reservation:create' },
       { name: '编辑订单', code: 'cage_reservation:update' },
