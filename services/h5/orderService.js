@@ -601,6 +601,14 @@ const getOrderDetail = async (userId, type, orderId) => {
       reagent: '试剂耗材订购'
     };
 
+    const statusTextMap = {
+      0: '待审核',
+      1: '进行中',
+      2: '已拒绝',
+      3: '已完成',
+      4: '已取消'
+    };
+
     let model, include;
     switch (type) {
       case 'equipment':
@@ -636,7 +644,10 @@ const getOrderDetail = async (userId, type, orderId) => {
           { model: db.AnimalSpecification, as: 'specification' },
           { model: db.AnimalRequirement, as: 'requirement' },
           { model: db.EnvironmentType, as: 'environment' },
-          { model: db.Handler, as: 'handler' }
+          { model: db.Handler, as: 'handler' },
+          { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
+          { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
+          { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }
         ];
         break;
       case 'reagent':
@@ -644,7 +655,10 @@ const getOrderDetail = async (userId, type, orderId) => {
         include = [
           { model: db.ReagentBrand, as: 'brand' },
           { model: db.ReagentSpecification, as: 'specification' },
-          { model: db.Handler, as: 'handler' }
+          { model: db.Handler, as: 'handler' },
+          { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
+          { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
+          { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }
         ];
         break;
       default:
@@ -660,10 +674,11 @@ const getOrderDetail = async (userId, type, orderId) => {
       throw new Error('订单不存在或无权访问');
     }
 
-    // 转换为普通对象并添加 type 和 type_name 字段
+    // 转换为普通对象并添加 type、type_name 和 status_text 字段
     const orderData = order.toJSON();
     orderData.type = type;
     orderData.type_name = typeNameMap[type];
+    orderData.status_text = statusTextMap[orderData.status] || '未知';
 
     return orderData;
   } catch (error) {
