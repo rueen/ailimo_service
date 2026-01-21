@@ -247,7 +247,7 @@ const getEnvironmentsByAnimalType = async (req, res, next) => {
  */
 const getCageAvailableQuantity = async (req, res, next) => {
   try {
-    const { animal_type_id, environment_id, start_date, end_date } = req.query;
+    const { animal_type_id, environment_id, start_date, end_date, exclude_reservation_id } = req.query;
     
     if (!animal_type_id) {
       return response.badRequest(res, '动物类型ID不能为空');
@@ -263,7 +263,8 @@ const getCageAvailableQuantity = async (req, res, next) => {
       animal_type_id,
       environment_id,
       start_date,
-      end_date: end_date || null
+      end_date: end_date || null,
+      exclude_reservation_id: exclude_reservation_id ? parseInt(exclude_reservation_id) : null
     });
     return response.success(res, result);
   } catch (err) {

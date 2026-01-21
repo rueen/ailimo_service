@@ -214,7 +214,7 @@ const getEnvironmentsByAnimalType = async (animalTypeId) => {
  */
 const getCageAvailableQuantity = async (params) => {
   try {
-    const { animal_type_id, environment_id, start_date, end_date } = params;
+    const { animal_type_id, environment_id, start_date, end_date, exclude_reservation_id } = params;
 
     // 验证动物类型和环境是否存在
     const animalType = await db.AnimalType.findByPk(animal_type_id);
@@ -251,7 +251,8 @@ const getCageAvailableQuantity = async (params) => {
       cage.id,
       start_date,
       end_date,
-      null // 无事务
+      null, // 无事务
+      exclude_reservation_id // 排除的订单ID
     );
 
     return {

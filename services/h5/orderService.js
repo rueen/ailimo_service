@@ -228,9 +228,10 @@ const createCageReservation = async (userId, data) => {
  * @param {String} startDate - 开始日期 (YYYY-MM-DD)
  * @param {String} endDate - 结束日期 (YYYY-MM-DD 或 NULL)
  * @param {Object} transaction - 事务对象
+ * @param {Number} excludeReservationId - 排除的订单ID（可选）
  * @returns {Promise<Number>} 日期范围内的最小可用数量
  */
-const checkCageAvailabilityForDateRange = async (cageId, startDate, endDate, transaction) => {
+const checkCageAvailabilityForDateRange = async (cageId, startDate, endDate, transaction, excludeReservationId = null) => {
   const cage = await db.Cage.findByPk(cageId, { transaction });
   if (!cage) {
     throw new Error('笼位不存在');
@@ -240,7 +241,7 @@ const checkCageAvailabilityForDateRange = async (cageId, startDate, endDate, tra
 
   // 如果是长期预约（end_date为null），只检查开始日期当天
   if (!endDate) {
-    const reservedQuantity = await getReservedQuantityForDate(cageId, startDate, transaction);
+    const reservedQuantity = await getReservedQuantityForDate(cageId, startDate, transaction, excludeReservationId);
     return totalQuantity - reservedQuantity;
   }
 
@@ -251,7 +252,7 @@ const checkCageAvailabilityForDateRange = async (cageId, startDate, endDate, tra
 
   for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
     const dateStr = date.toISOString().split('T')[0];
-    const reservedQuantity = await getReservedQuantityForDate(cageId, dateStr, transaction);
+    const reservedQuantity = await getReservedQuantityForDate(cageId, dateStr, transaction, excludeReservationId);
     const available = totalQuantity - reservedQuantity;
     minAvailable = Math.min(minAvailable, available);
   }
@@ -1123,7 +1124,7 @@ const getEnvironmentsByAnimalType = async (animalTypeId) => {
  */
 const getCageAvailableQuantity = async (params) => {
   try {
-    const { animal_type_id, environment_id, start_date, end_date } = params;
+    const { animal_type_id, environment_id, start_date, end_date, exclude_reservation_id } = params;
 
     // 验证动物类型和环境是否存在
     const animalType = await db.AnimalType.findByPk(animal_type_id);
@@ -1160,7 +1161,8 @@ const getCageAvailableQuantity = async (params) => {
       cage.id,
       start_date,
       end_date,
-      null // 无事务
+      null, // 无事务
+      exclude_reservation_id // 排除的订单ID
     );
 
     return {
