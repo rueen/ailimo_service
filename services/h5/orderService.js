@@ -19,7 +19,7 @@ const createEquipmentReservation = async (userId, data) => {
   const transaction = await db.sequelize.transaction();
   
   try {
-    const { equipment_id, reservation_date, time_slots } = data;
+    const { equipment_id, time_slots } = data;
 
     // 1. 验证当前用户是否已登录且审核已通过
     const user = await db.User.findByPk(userId);
@@ -42,43 +42,53 @@ const createEquipmentReservation = async (userId, data) => {
       throw new Error('设备不可用');
     }
 
-    // 3. 验证预约日期不能是过去的日期
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const reservationDate = new Date(reservation_date);
-    if (reservationDate < today) {
-      throw new Error('预约日期不能是过去的日期');
+    // 3. 验证时间段格式和有效性（新格式：包含日期）
+    const timeSlotArray = typeof time_slots === 'string' ? JSON.parse(time_slots) : time_slots;
+    if (!Array.isArray(timeSlotArray) || timeSlotArray.length === 0) {
+      throw new Error('时间段格式错误或为空');
     }
 
-    // 4. 验证预约日期不能超过提前预约天数限制
+    // 4. 提取并验证所有日期
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const advanceDaysConfig = await db.SystemConfig.findOne({
       where: { config_key: 'equipment_advance_days' }
     });
     const advanceDays = advanceDaysConfig ? parseInt(advanceDaysConfig.config_value) : 7;
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + advanceDays);
-    if (reservationDate > maxDate) {
-      throw new Error(`预约日期不能超过${advanceDays}天`);
-    }
 
-    // 5. 验证时间段格式和有效性
-    const timeSlotArray = typeof time_slots === 'string' ? JSON.parse(time_slots) : time_slots;
-    if (!Array.isArray(timeSlotArray) || timeSlotArray.length === 0) {
-      throw new Error('时间段格式错误或为空');
-    }
-
-    // 6. 检查设备在选定时间段是否已被预约（使用数据库行锁防止并发）
     for (const slot of timeSlotArray) {
-      const isAvailable = await checkEquipmentAvailability(
-        equipment_id,
-        reservation_date,
-        slot,
-        transaction
-      );
-
-      if (!isAvailable) {
-        throw new Error(`时间段 ${slot} 已被预约，请选择其他时间`);
+      // 验证格式：必须是 "YYYY-MM-DD HH:MM-HH:MM"
+      const match = slot.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}-\d{2}:\d{2})$/);
+      if (!match) {
+        throw new Error(`时间段格式错误：${slot}，正确格式为 "YYYY-MM-DD HH:MM-HH:MM"`);
       }
+
+      const dateStr = match[1];
+      const reservationDate = new Date(dateStr);
+      
+      // 验证日期不能是过去
+      if (reservationDate < today) {
+        throw new Error(`预约日期 ${dateStr} 不能是过去的日期`);
+      }
+
+      // 验证日期不能超过提前预约天数
+      if (reservationDate > maxDate) {
+        throw new Error(`预约日期 ${dateStr} 不能超过${advanceDays}天`);
+      }
+    }
+
+    // 5. 检查设备在选定时间段是否已被预约（使用数据库行锁防止并发）
+    const isAvailable = await checkEquipmentAvailability(
+      equipment_id,
+      timeSlotArray,
+      transaction
+    );
+
+    if (!isAvailable) {
+      throw new Error('所选时间段部分或全部已被预约，请选择其他时间');
     }
 
     // 7. 自动关联当前登录用户
@@ -108,22 +118,35 @@ const createEquipmentReservation = async (userId, data) => {
 };
 
 /**
- * 检查设备在指定日期和时间段是否可用
+ * 检查设备时间段是否可用（新格式：包含日期）
+ * @param {Number} equipmentId - 设备ID
+ * @param {Array} timeSlots - 时间段数组，格式：["2026-01-22 09:00-10:00", ...]
+ * @param {Transaction} transaction - 事务对象
+ * @returns {Promise<Boolean>}
  */
-const checkEquipmentAvailability = async (equipmentId, date, timeSlot, transaction) => {
-  const existingReservation = await db.EquipmentReservation.findOne({
+const checkEquipmentAvailability = async (equipmentId, timeSlots, transaction) => {
+  // 查询该设备的所有有效订单（待审核、进行中状态）
+  const existingReservations = await db.EquipmentReservation.findAll({
     where: {
       equipment_id: equipmentId,
-      reservation_date: date,
-      status: [0, 1], // 待审核和进行中
-      time_slots: {
-        [Op.like]: `%${timeSlot}%`
-      }
+      status: { [Op.in]: [0, 1] } // 待审核或进行中
     },
+    attributes: ['time_slots'],
     transaction
   });
 
-  return !existingReservation;
+  // 提取所有已预约的时间段
+  const bookedSlots = [];
+  existingReservations.forEach(reservation => {
+    if (reservation.time_slots && Array.isArray(reservation.time_slots)) {
+      bookedSlots.push(...reservation.time_slots);
+    }
+  });
+
+  // 检查是否有冲突
+  const hasConflict = timeSlots.some(slot => bookedSlots.includes(slot));
+  
+  return !hasConflict;
 };
 
 // ==================== 笼位预约订单 ====================
@@ -444,7 +467,7 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
           { model: db.Equipment, as: 'equipment', attributes: ['id', 'name'] },
           { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
         ];
-      typeConfig = { dateField: 'reservation_date', titleField: 'equipment.name' };
+      typeConfig = { titleField: 'equipment.name' };
         break;
       case 'cage':
         model = db.CageReservation;
@@ -453,7 +476,7 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
           { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
           { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
         ];
-      typeConfig = { dateField: 'reservation_date' };
+      typeConfig = { dateField: 'reservation_date' }; // 笼位预约保留 reservation_date
         break;
       case 'experiment':
         model = db.ExperimentOperation;
@@ -462,7 +485,7 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
         { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
           { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
         ];
-      typeConfig = { dateField: 'reservation_date' };
+      typeConfig = {};
         break;
       case 'animal':
         model = db.AnimalOrder;
@@ -487,10 +510,27 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
 
     const where = { user_id: userId };
     if (status !== undefined) where.status = status;
+  
+  // 日期筛选逻辑
   if (start_date || end_date) {
-    where[typeConfig.dateField] = {};
-    if (start_date) where[typeConfig.dateField][Op.gte] = start_date;
-    if (end_date) where[typeConfig.dateField][Op.lte] = end_date;
+    if (typeConfig.dateField) {
+      // 笼位预约、动物订购、试剂耗材订购：使用原有的 dateField
+      where[typeConfig.dateField] = {};
+      if (start_date) where[typeConfig.dateField][Op.gte] = start_date;
+      if (end_date) where[typeConfig.dateField][Op.lte] = end_date;
+    } else {
+      // 设备预约、实验代操作：使用 JSON 查询 time_slots
+      const conditions = [];
+      if (start_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${start_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (end_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${end_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (conditions.length > 0) {
+        where[Op.and] = db.sequelize.literal(conditions.join(' OR '));
+      }
+    }
   }
 
   const queryOptions = {
@@ -552,7 +592,8 @@ const formatOrderForList = (order, type, typeConfig) => {
   switch (type) {
     case 'equipment':
       title = orderData.equipment?.name || '';
-      date = orderData.reservation_date;
+      // 从 time_slots 中提取第一个日期作为展示日期
+      date = extractFirstDateFromSlots(orderData.time_slots);
       break;
     case 'cage':
       title = `${orderData.animal_type?.name || ''}-${orderData.environment?.name || ''}-${orderData.quantity}个`;
@@ -560,7 +601,8 @@ const formatOrderForList = (order, type, typeConfig) => {
       break;
     case 'experiment':
       title = `${orderData.operation_content?.name || ''}-${orderData.animal_type?.name || ''}-${orderData.quantity}只`;
-      date = orderData.reservation_date;
+      // 从 time_slots 中提取第一个日期作为展示日期
+      date = extractFirstDateFromSlots(orderData.time_slots);
       break;
     case 'animal':
       title = orderData.variety?.name || '';
@@ -570,6 +612,19 @@ const formatOrderForList = (order, type, typeConfig) => {
       title = orderData.name || '';
       date = orderData.delivery_date;
       break;
+  }
+
+  /**
+   * 从 time_slots 中提取第一个日期
+   * @param {Array} timeSlots - 格式：["2026-01-10 09:00-10:00", ...]
+   * @returns {String} - 日期字符串或空字符串
+   */
+  function extractFirstDateFromSlots(timeSlots) {
+    if (!Array.isArray(timeSlots) || timeSlots.length === 0) {
+      return '';
+    }
+    const match = timeSlots[0].match(/^(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : '';
   }
 
   return {
@@ -933,22 +988,28 @@ const getEquipmentAvailableSlots = async (equipmentId, date) => {
       order: [['sort_order', 'ASC']]
     });
 
-    // 查询该设备在该日期已预约的时间段（状态为待审核或进行中）
+    // 查询该设备的所有有效订单（待审核或进行中）
     const reservations = await db.EquipmentReservation.findAll({
       where: {
         equipment_id: equipmentId,
-        reservation_date: date,
-        status: [0, 1] // 待审核和进行中
+        status: { [Op.in]: [0, 1] } // 待审核或进行中
       },
       attributes: ['time_slots']
     });
 
-    // 提取所有已预约的时间段
-    const bookedSlots = new Set();
+    // 提取该日期已预约的时间段
+    const bookedSlots = [];
     reservations.forEach(reservation => {
-      const slots = reservation.time_slots;
-      if (Array.isArray(slots)) {
-        slots.forEach(slot => bookedSlots.add(slot));
+      if (reservation.time_slots && Array.isArray(reservation.time_slots)) {
+        // 筛选出指定日期的时间段
+        const dateSlotsForDate = reservation.time_slots.filter(slot => {
+          return slot.startsWith(date + ' ');
+        });
+        // 提取时间部分（去掉日期前缀）
+        dateSlotsForDate.forEach(slot => {
+          const timeStr = slot.substring(11); // 提取 "09:00-10:00" 部分
+          bookedSlots.push(timeStr);
+        });
       }
     });
 
@@ -965,7 +1026,7 @@ const getEquipmentAvailableSlots = async (equipmentId, date) => {
         end_time: slot.end_time,
         display_time: displayTime,
         description: slot.description || '',
-        available: !bookedSlots.has(displayTime)
+        available: !bookedSlots.includes(displayTime)
       };
     });
 

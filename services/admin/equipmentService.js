@@ -165,15 +165,24 @@ const getReservationList = async (params) => {
     if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
     if (order_sn) where.order_sn = order_sn;
-    // 日期筛选：支持单日期精确查询或日期范围查询
+    // 日期筛选：使用 JSON 查询匹配包含指定日期的订单
     if (reservation_date) {
-      // 精确匹配某个日期
-      where.reservation_date = reservation_date;
-    } else if (start_date && end_date) {
-      // 日期范围查询
-      where.reservation_date = {
-        [Op.between]: [start_date, end_date]
-      };
+      // 精确匹配包含某个日期的订单
+      where[Op.and] = db.sequelize.literal(
+        `JSON_SEARCH(time_slots, 'one', '${reservation_date}%', NULL, '$[*]') IS NOT NULL`
+      );
+    } else if (start_date || end_date) {
+      // 日期范围查询：查询 time_slots 中任意时间段的日期在范围内的订单
+      const conditions = [];
+      if (start_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${start_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (end_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${end_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (conditions.length > 0) {
+        where[Op.and] = db.sequelize.literal(conditions.join(' OR '));
+      }
     }
 
     // 构建关联查询的 where 条件
@@ -279,7 +288,7 @@ const createReservation = async (data, adminId = null) => {
   const transaction = await db.sequelize.transaction();
   
   try {
-    const { equipment_id, reservation_date, time_slots } = data;
+    const { equipment_id, time_slots } = data;
 
     // 检查设备是否存在，并加锁防止并发问题
     const equipment = await db.Equipment.findByPk(equipment_id, { 
@@ -294,10 +303,9 @@ const createReservation = async (data, adminId = null) => {
       throw new Error('设备不可用');
     }
 
-    // 检查时间段可用性
+    // 检查时间段可用性（新格式：包含日期的时间段）
     const isAvailable = await checkEquipmentAvailability(
       equipment_id,
-      reservation_date,
       time_slots
     );
 
@@ -348,10 +356,9 @@ const updateReservation = async (id, data) => {
       throw new Error('只有待审核的订单才能修改');
     }
 
-    // 如果修改了设备、日期或时间段，需要重新检查可用性
-    if (data.equipment_id || data.reservation_date || data.time_slots) {
+    // 如果修改了设备或时间段，需要重新检查可用性
+    if (data.equipment_id || data.time_slots) {
       const equipmentId = data.equipment_id || reservation.equipment_id;
-      const reservationDate = data.reservation_date || reservation.reservation_date;
       const timeSlots = data.time_slots || reservation.time_slots;
 
       const equipment = await db.Equipment.findByPk(equipmentId, { 
@@ -368,7 +375,6 @@ const updateReservation = async (id, data) => {
 
       const isAvailable = await checkEquipmentAvailability(
         equipmentId,
-        reservationDate,
         timeSlots,
         id // 排除当前订单
       );
@@ -392,17 +398,15 @@ const updateReservation = async (id, data) => {
 /**
  * 检查设备时间段是否可用
  * @param {Number} equipmentId - 设备ID
- * @param {String} date - 预约日期
- * @param {Array} timeSlots - 时间段数组
+ * @param {Array} timeSlots - 时间段数组（包含日期），格式：["2026-01-22 09:00-10:00", "2026-01-22 10:00-11:00"]
  * @param {Number} excludeReservationId - 排除的订单ID（更新时使用）
  * @returns {Promise<Boolean>}
  */
-const checkEquipmentAvailability = async (equipmentId, date, timeSlots, excludeReservationId = null) => {
+const checkEquipmentAvailability = async (equipmentId, timeSlots, excludeReservationId = null) => {
   try {
-    // 查询该设备在该日期的所有有效订单（待审核、进行中状态）
+    // 查询该设备的所有有效订单（待审核、进行中状态）
     const where = {
       equipment_id: equipmentId,
-      reservation_date: date,
       status: { [Op.in]: [0, 1] } // 待审核或进行中
     };
 
@@ -460,7 +464,6 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
     if (status === 1) {
       const isAvailable = await checkEquipmentAvailability(
         reservation.equipment_id,
-        reservation.reservation_date,
         reservation.time_slots,
         id
       );
@@ -703,7 +706,7 @@ const getTimeSlotOptions = async () => {
 /**
  * 获取设备在指定日期的可用时间段
  * @param {Number} equipmentId - 设备ID
- * @param {String} date - 日期
+ * @param {String} date - 日期（格式：YYYY-MM-DD）
  * @returns {Promise<Array>}
  */
 const getAvailableSlots = async (equipmentId, date) => {
@@ -714,21 +717,28 @@ const getAvailableSlots = async (equipmentId, date) => {
       order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
     });
 
-    // 查询该设备在该日期的所有有效订单
+    // 查询该设备的所有有效订单（待审核或进行中）
     const reservations = await db.EquipmentReservation.findAll({
       where: {
         equipment_id: equipmentId,
-        reservation_date: date,
         status: { [Op.in]: [0, 1] } // 待审核或进行中
       },
       attributes: ['time_slots']
     });
 
-    // 提取已预约的时间段
+    // 提取该日期已预约的时间段
     const bookedSlots = [];
     reservations.forEach(reservation => {
       if (reservation.time_slots && Array.isArray(reservation.time_slots)) {
-        bookedSlots.push(...reservation.time_slots);
+        // 筛选出指定日期的时间段
+        const dateSlotsForDate = reservation.time_slots.filter(slot => {
+          return slot.startsWith(date + ' ');
+        });
+        // 提取时间部分（去掉日期前缀）
+        dateSlotsForDate.forEach(slot => {
+          const timeStr = slot.substring(11); // 提取 "09:00-10:00" 部分
+          bookedSlots.push(timeStr);
+        });
       }
     });
 

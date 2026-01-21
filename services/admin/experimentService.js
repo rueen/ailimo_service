@@ -37,19 +37,24 @@ const getOperationList = async (params) => {
     if (animal_type_id) where.animal_type_id = animal_type_id;
     if (handler_id) where.handler_id = handler_id;
     if (order_sn) where.order_sn = order_sn;
-    // 日期筛选：支持单日期精确查询或日期范围查询
+    // 日期筛选：使用 JSON 查询匹配包含指定日期的订单
     if (reservation_date) {
-      // 精确匹配某个日期
-      where.reservation_date = reservation_date;
-    } else if (start_date && end_date) {
-      // 日期范围查询
-      where.reservation_date = {
-        [Op.between]: [start_date, end_date]
-      };
-    } else if (start_date) {
-      where.reservation_date = { [Op.gte]: start_date };
-    } else if (end_date) {
-      where.reservation_date = { [Op.lte]: end_date };
+      // 精确匹配包含某个日期的订单
+      where[Op.and] = db.sequelize.literal(
+        `JSON_SEARCH(time_slots, 'one', '${reservation_date}%', NULL, '$[*]') IS NOT NULL`
+      );
+    } else if (start_date || end_date) {
+      // 日期范围查询：查询 time_slots 中任意时间段的日期在范围内的订单
+      const conditions = [];
+      if (start_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${start_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (end_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${end_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (conditions.length > 0) {
+        where[Op.and] = db.sequelize.literal(conditions.join(' OR '));
+      }
     }
 
     // 构建用户搜索条件
