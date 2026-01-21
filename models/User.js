@@ -48,9 +48,25 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER.UNSIGNED,
       comment: '所属组织机构ID'
     },
+    department_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      comment: '所属学院ID'
+    },
     research_group_id: {
       type: DataTypes.INTEGER.UNSIGNED,
       comment: '所属课题组ID'
+    },
+    user_input_organization_name: {
+      type: DataTypes.STRING(100),
+      comment: '用户输入的组织机构名称'
+    },
+    user_input_department_name: {
+      type: DataTypes.STRING(100),
+      comment: '用户输入的学院名称'
+    },
+    user_input_research_group_name: {
+      type: DataTypes.STRING(100),
+      comment: '用户输入的课题组名称'
     },
     status: {
       type: DataTypes.TINYINT,
@@ -83,6 +99,7 @@ module.exports = (sequelize) => {
       { fields: ['user_no'] },
       { fields: ['phone'] },
       { fields: ['organization_id'] },
+      { fields: ['department_id'] },
       { fields: ['research_group_id'] },
       { fields: ['audit_status'] },
       { fields: ['status'] }

@@ -175,6 +175,95 @@ const deleteOrganization = async (req, res, next) => {
 };
 
 /**
+ * 获取学院列表
+ */
+const getDepartmentList = async (req, res, next) => {
+  try {
+    const params = req.query;
+    const result = await userService.getDepartmentList(params);
+    return response.paginate(res, result.list, result.total, result.page, result.pageSize);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 获取学院详情
+ */
+const getDepartmentDetail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const department = await userService.getDepartmentDetail(id);
+    return response.success(res, department);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 创建学院
+ */
+const createDepartment = async (req, res, next) => {
+  try {
+    const { name, organization_id } = req.body;
+
+    if (!name || !organization_id) {
+      return response.badRequest(res, '学院名称和组织机构不能为空');
+    }
+
+    const department = await userService.createDepartment(name, organization_id);
+    return response.success(res, department, '创建成功');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 更新学院
+ */
+const updateDepartment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, organization_id } = req.body;
+
+    if (!name || !organization_id) {
+      return response.badRequest(res, '学院名称和组织机构不能为空');
+    }
+
+    await userService.updateDepartment(id, name, organization_id);
+    return response.success(res, null, '更新成功');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 删除学院
+ */
+const deleteDepartment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await userService.deleteDepartment(id);
+    return response.success(res, null, '删除成功');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 获取学院选项列表
+ */
+const getDepartmentOptions = async (req, res, next) => {
+  try {
+    const { organization_id } = req.query;
+    const departments = await userService.getDepartmentOptions(organization_id);
+    return response.success(res, departments);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 获取课题组列表
  */
 const getResearchGroupList = async (req, res, next) => {
@@ -188,17 +277,30 @@ const getResearchGroupList = async (req, res, next) => {
 };
 
 /**
+ * 获取课题组详情
+ */
+const getResearchGroupDetail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const group = await userService.getResearchGroupDetail(id);
+    return response.success(res, group);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 创建课题组
  */
 const createResearchGroup = async (req, res, next) => {
   try {
-    const { name, organization_id } = req.body;
+    const { name, department_id } = req.body;
 
-    if (!name || !organization_id) {
-      return response.badRequest(res, '课题组名称和组织机构不能为空');
+    if (!name || !department_id) {
+      return response.badRequest(res, '课题组名称和学院不能为空');
     }
 
-    const group = await userService.createResearchGroup(name, organization_id);
+    const group = await userService.createResearchGroup(name, department_id);
     return response.success(res, group, '创建成功');
   } catch (err) {
     next(err);
@@ -211,13 +313,13 @@ const createResearchGroup = async (req, res, next) => {
 const updateResearchGroup = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, organization_id } = req.body;
+    const { name, department_id } = req.body;
 
-    if (!name || !organization_id) {
-      return response.badRequest(res, '课题组名称和组织机构不能为空');
+    if (!name || !department_id) {
+      return response.badRequest(res, '课题组名称和学院不能为空');
     }
 
-    await userService.updateResearchGroup(id, name, organization_id);
+    await userService.updateResearchGroup(id, name, department_id);
     return response.success(res, null, '更新成功');
   } catch (err) {
     next(err);
@@ -254,8 +356,8 @@ const getOrganizationOptions = async (req, res, next) => {
  */
 const getResearchGroupOptions = async (req, res, next) => {
   try {
-    const { organization_id } = req.query;
-    const groups = await userService.getResearchGroupOptions(organization_id);
+    const { department_id } = req.query;
+    const groups = await userService.getResearchGroupOptions(department_id);
     return response.success(res, groups);
   } catch (err) {
     next(err);
@@ -274,7 +376,14 @@ module.exports = {
   createOrganization,
   updateOrganization,
   deleteOrganization,
+  getDepartmentList,
+  getDepartmentDetail,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
+  getDepartmentOptions,
   getResearchGroupList,
+  getResearchGroupDetail,
   createResearchGroup,
   updateResearchGroup,
   deleteResearchGroup,

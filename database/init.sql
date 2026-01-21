@@ -87,11 +87,17 @@ INSERT INTO `organizations` (`name`, `created_at`, `updated_at`) VALUES
 ('复旦大学', NOW(), NOW()),
 ('上海交通大学', NOW(), NOW());
 
--- ==================== 12. 默认课题组 ====================
-INSERT INTO `research_groups` (`name`, `organization_id`, `created_at`, `updated_at`) VALUES
+-- ==================== 12. 默认学院 ====================
+INSERT INTO `departments` (`name`, `organization_id`, `created_at`, `updated_at`) VALUES
+('生命科学学院', 1, NOW(), NOW()),
+('医学院', 1, NOW(), NOW()),
+('基础医学院', 2, NOW(), NOW());
+
+-- ==================== 13. 默认课题组 ====================
+INSERT INTO `research_groups` (`name`, `department_id`, `created_at`, `updated_at`) VALUES
 ('肿瘤免疫研究组', 1, NOW(), NOW()),
 ('神经科学研究组', 1, NOW(), NOW()),
-('分子生物学研究组', 2, NOW(), NOW());
+('分子生物学研究组', 3, NOW(), NOW());
 
 -- ==================== 完成 ====================
 -- 初始化完成，默认管理员账号：admin 密码：123456

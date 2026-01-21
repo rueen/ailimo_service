@@ -13,7 +13,7 @@ const { validator } = require('../../utils');
  */
 const getUserList = async (params) => {
   try {
-    const { page = 1, pageSize = 10, name, phone, keyword, organization_id, audit_status, status } = params;
+    const { page = 1, pageSize = 10, name, phone, keyword, organization_id, department_id, research_group_id, audit_status, status } = params;
     
     const where = {};
     
@@ -30,6 +30,8 @@ const getUserList = async (params) => {
     }
     
     if (organization_id) where.organization_id = organization_id;
+    if (department_id) where.department_id = department_id;
+    if (research_group_id) where.research_group_id = research_group_id;
     if (audit_status !== undefined) where.audit_status = audit_status;
     if (status !== undefined) where.status = status;
 
@@ -39,6 +41,7 @@ const getUserList = async (params) => {
       where,
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
+        { model: db.Department, as: 'department', attributes: ['id', 'name'] },
         { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] },
         { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] },
         { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
@@ -82,6 +85,7 @@ const getUserDetail = async (userId) => {
     const user = await db.User.findByPk(userId, {
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
+        { model: db.Department, as: 'department', attributes: ['id', 'name'] },
         { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] },
         { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] },
         { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
@@ -131,11 +135,25 @@ const createUser = async (userData, adminId) => {
       }
     }
 
-    // 验证课题组是否存在
+    // 验证学院是否存在且属于所选组织机构
+    if (userData.department_id) {
+      const dept = await db.Department.findByPk(userData.department_id);
+      if (!dept) {
+        throw new Error('学院不存在');
+      }
+      if (userData.organization_id && dept.organization_id !== userData.organization_id) {
+        throw new Error('学院不属于所选的组织机构');
+      }
+    }
+
+    // 验证课题组是否存在且属于所选学院
     if (userData.research_group_id) {
       const group = await db.ResearchGroup.findByPk(userData.research_group_id);
       if (!group) {
         throw new Error('课题组不存在');
+      }
+      if (userData.department_id && group.department_id !== userData.department_id) {
+        throw new Error('课题组不属于所选的学院');
       }
     }
 
@@ -218,11 +236,29 @@ const updateUser = async (userId, userData) => {
       }
     }
 
-    // 验证课题组
+    // 验证学院是否存在且属于所选组织机构
+    if (userData.department_id) {
+      const dept = await db.Department.findByPk(userData.department_id);
+      if (!dept) {
+        throw new Error('学院不存在');
+      }
+      // 如果同时提供了organization_id，验证学院是否属于该组织机构
+      const orgId = userData.organization_id !== undefined ? userData.organization_id : user.organization_id;
+      if (orgId && dept.organization_id !== orgId) {
+        throw new Error('学院不属于所选的组织机构');
+      }
+    }
+
+    // 验证课题组是否存在且属于所选学院
     if (userData.research_group_id) {
       const group = await db.ResearchGroup.findByPk(userData.research_group_id);
       if (!group) {
         throw new Error('课题组不存在');
+      }
+      // 如果同时提供了department_id，验证课题组是否属于该学院
+      const deptId = userData.department_id !== undefined ? userData.department_id : user.department_id;
+      if (deptId && group.department_id !== deptId) {
+        throw new Error('课题组不属于所选的学院');
       }
     }
 
@@ -439,11 +475,11 @@ const deleteOrganization = async (id) => {
       throw new Error('组织机构不存在');
     }
 
-    // 检查是否有关联用户或课题组
+    // 检查是否有关联用户、学院或课题组
     const userCount = await db.User.count({ where: { organization_id: id } });
-    const groupCount = await db.ResearchGroup.count({ where: { organization_id: id } });
+    const deptCount = await db.Department.count({ where: { organization_id: id } });
     
-    if (userCount > 0 || groupCount > 0) {
+    if (userCount > 0 || deptCount > 0) {
       throw new Error('该组织机构存在关联数据，无法删除');
     }
 
@@ -456,11 +492,11 @@ const deleteOrganization = async (id) => {
 };
 
 /**
- * 获取课题组列表
+ * 获取学院列表
  * @param {Object} params - 查询参数
  * @returns {Promise<Object>}
  */
-const getResearchGroupList = async (params) => {
+const getDepartmentList = async (params) => {
   try {
     const { page = 1, pageSize = 10, name, organization_id } = params;
     
@@ -470,7 +506,7 @@ const getResearchGroupList = async (params) => {
 
     const offset = (page - 1) * pageSize;
     
-    const { count, rows } = await db.ResearchGroup.findAndCountAll({
+    const { count, rows } = await db.Department.findAndCountAll({
       where,
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] }
@@ -487,7 +523,226 @@ const getResearchGroupList = async (params) => {
       pageSize: parseInt(pageSize)
     };
   } catch (err) {
+    logger.error(`Get department list failed: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * 获取学院详情
+ * @param {Number} id - 学院ID
+ * @returns {Promise<Object>}
+ */
+const getDepartmentDetail = async (id) => {
+  try {
+    const department = await db.Department.findByPk(id, {
+      include: [
+        { model: db.Organization, as: 'organization', attributes: ['id', 'name'] }
+      ]
+    });
+    
+    if (!department) {
+      throw new Error('学院不存在');
+    }
+    
+    return department;
+  } catch (err) {
+    logger.error(`Get department detail failed: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * 创建学院
+ * @param {String} name - 学院名称
+ * @param {Number} organizationId - 组织ID
+ * @returns {Promise<Object>}
+ */
+const createDepartment = async (name, organizationId) => {
+  try {
+    // 验证组织机构是否存在
+    const org = await db.Organization.findByPk(organizationId);
+    if (!org) {
+      throw new Error('组织机构不存在');
+    }
+
+    const department = await db.Department.create({ 
+      name, 
+      organization_id: organizationId 
+    });
+    logger.info(`Department created: ${name}, orgId=${organizationId}`);
+    return department;
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      throw new Error('该组织机构下已存在同名学院');
+    }
+    logger.error(`Create department failed: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * 更新学院
+ * @param {Number} id - 学院ID
+ * @param {String} name - 学院名称
+ * @param {Number} organizationId - 组织ID
+ * @returns {Promise<void>}
+ */
+const updateDepartment = async (id, name, organizationId) => {
+  try {
+    const department = await db.Department.findByPk(id);
+    if (!department) {
+      throw new Error('学院不存在');
+    }
+
+    // 如果修改了组织机构，验证组织机构是否存在
+    if (organizationId && organizationId !== department.organization_id) {
+      const org = await db.Organization.findByPk(organizationId);
+      if (!org) {
+        throw new Error('组织机构不存在');
+      }
+    }
+
+    await department.update({ name, organization_id: organizationId });
+    logger.info(`Department updated: id=${id}`);
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      throw new Error('该组织机构下已存在同名学院');
+    }
+    logger.error(`Update department failed: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * 删除学院
+ * @param {Number} id - 学院ID
+ * @returns {Promise<void>}
+ */
+const deleteDepartment = async (id) => {
+  try {
+    const department = await db.Department.findByPk(id);
+    if (!department) {
+      throw new Error('学院不存在');
+    }
+
+    // 检查是否有关联用户或课题组
+    const userCount = await db.User.count({ where: { department_id: id } });
+    const groupCount = await db.ResearchGroup.count({ where: { department_id: id } });
+    
+    if (userCount > 0 || groupCount > 0) {
+      throw new Error('该学院存在关联数据，无法删除');
+    }
+
+    await department.destroy();
+    logger.info(`Department deleted: id=${id}`);
+  } catch (err) {
+    logger.error(`Delete department failed: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * 获取学院选项列表
+ * @param {Number} organizationId - 组织ID（可选）
+ * @returns {Promise<Array>}
+ */
+const getDepartmentOptions = async (organizationId) => {
+  try {
+    const where = organizationId ? { organization_id: organizationId } : {};
+    const departments = await db.Department.findAll({
+      where,
+      attributes: ['id', 'name', 'organization_id'],
+      order: [['name', 'ASC']]
+    });
+    return departments;
+  } catch (err) {
+    logger.error(`Get department options failed: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * 获取课题组列表
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
+ */
+const getResearchGroupList = async (params) => {
+  try {
+    const { page = 1, pageSize = 10, name, department_id } = params;
+    
+    const where = {};
+    if (name) where.name = { [Op.like]: `%${name}%` };
+    if (department_id) where.department_id = department_id;
+
+    const offset = (page - 1) * pageSize;
+    
+    const { count, rows } = await db.ResearchGroup.findAndCountAll({
+      where,
+      include: [
+        { 
+          model: db.Department, 
+          as: 'department', 
+          attributes: ['id', 'name', 'organization_id'],
+          include: [
+            { model: db.Organization, as: 'organization', attributes: ['id', 'name'] }
+          ]
+        }
+      ],
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
+    });
+
+    // 序列化数据，确保嵌套的 organization 信息被正确返回
+    const list = rows.map(row => {
+      const data = row.toJSON();
+      // 将嵌套的 organization 提升到顶层
+      if (data.department && data.department.organization) {
+        data.organization = data.department.organization;
+      }
+      return data;
+    });
+
+    return {
+      list,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize)
+    };
+  } catch (err) {
     logger.error(`Get research group list failed: ${err.message}`);
+    throw err;
+  }
+};
+
+/**
+ * 获取课题组详情
+ * @param {Number} id - 课题组ID
+ * @returns {Promise<Object>}
+ */
+const getResearchGroupDetail = async (id) => {
+  try {
+    const group = await db.ResearchGroup.findByPk(id, {
+      include: [
+        { 
+          model: db.Department, 
+          as: 'department', 
+          attributes: ['id', 'name', 'organization_id'],
+          include: [
+            { model: db.Organization, as: 'organization', attributes: ['id', 'name'] }
+          ]
+        }
+      ]
+    });
+    
+    if (!group) {
+      throw new Error('课题组不存在');
+    }
+    
+    return group;
+  } catch (err) {
+    logger.error(`Get research group detail failed: ${err.message}`);
     throw err;
   }
 };
@@ -495,20 +750,26 @@ const getResearchGroupList = async (params) => {
 /**
  * 创建课题组
  * @param {String} name - 课题组名称
- * @param {Number} organizationId - 组织ID
+ * @param {Number} departmentId - 学院ID
  * @returns {Promise<Object>}
  */
-const createResearchGroup = async (name, organizationId) => {
+const createResearchGroup = async (name, departmentId) => {
   try {
+    // 验证学院是否存在
+    const dept = await db.Department.findByPk(departmentId);
+    if (!dept) {
+      throw new Error('学院不存在');
+    }
+
     const group = await db.ResearchGroup.create({ 
       name, 
-      organization_id: organizationId 
+      department_id: departmentId 
     });
-    logger.info(`Research group created: ${name}`);
+    logger.info(`Research group created: ${name}, deptId=${departmentId}`);
     return group;
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
-      throw new Error('该组织机构下已存在同名课题组');
+      throw new Error('该学院下已存在同名课题组');
     }
     logger.error(`Create research group failed: ${err.message}`);
     throw err;
@@ -519,20 +780,29 @@ const createResearchGroup = async (name, organizationId) => {
  * 更新课题组
  * @param {Number} id - 课题组ID
  * @param {String} name - 课题组名称
- * @param {Number} organizationId - 组织ID
+ * @param {Number} departmentId - 学院ID
  * @returns {Promise<void>}
  */
-const updateResearchGroup = async (id, name, organizationId) => {
+const updateResearchGroup = async (id, name, departmentId) => {
   try {
     const group = await db.ResearchGroup.findByPk(id);
     if (!group) {
       throw new Error('课题组不存在');
     }
-    await group.update({ name, organization_id: organizationId });
+
+    // 如果修改了学院，验证学院是否存在
+    if (departmentId && departmentId !== group.department_id) {
+      const dept = await db.Department.findByPk(departmentId);
+      if (!dept) {
+        throw new Error('学院不存在');
+      }
+    }
+
+    await group.update({ name, department_id: departmentId });
     logger.info(`Research group updated: id=${id}`);
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
-      throw new Error('该组织机构下已存在同名课题组');
+      throw new Error('该学院下已存在同名课题组');
     }
     logger.error(`Update research group failed: ${err.message}`);
     throw err;
@@ -584,18 +854,15 @@ const getOrganizationOptions = async () => {
 
 /**
  * 获取课题组选项列表
- * @param {Number} organizationId - 组织ID（可选）
+ * @param {Number} departmentId - 学院ID（可选）
  * @returns {Promise<Array>}
  */
-const getResearchGroupOptions = async (organizationId) => {
+const getResearchGroupOptions = async (departmentId) => {
   try {
-    const where = organizationId ? { organization_id: organizationId } : {};
+    const where = departmentId ? { department_id: departmentId } : {};
     const groups = await db.ResearchGroup.findAll({
       where,
-      attributes: ['id', 'name', 'organization_id'],
-      include: [
-        { model: db.Organization, as: 'organization', attributes: ['id', 'name'] }
-      ],
+      attributes: ['id', 'name', 'department_id'],
       order: [['name', 'ASC']]
     });
     return groups;
@@ -617,7 +884,14 @@ module.exports = {
   createOrganization,
   updateOrganization,
   deleteOrganization,
+  getDepartmentList,
+  getDepartmentDetail,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
+  getDepartmentOptions,
   getResearchGroupList,
+  getResearchGroupDetail,
   createResearchGroup,
   updateResearchGroup,
   deleteResearchGroup,

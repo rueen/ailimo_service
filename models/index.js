@@ -28,6 +28,7 @@ db.sequelize = sequelize;
 // 用户相关模型
 db.User = require('./User')(sequelize);
 db.Organization = require('./Organization')(sequelize);
+db.Department = require('./Department')(sequelize);
 db.ResearchGroup = require('./ResearchGroup')(sequelize);
 
 // 管理员相关模型
@@ -79,13 +80,15 @@ db.Region = require('./Region')(sequelize);
 
 // 用户相关关联
 db.User.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'organization' });
+db.User.belongsTo(db.Department, { foreignKey: 'department_id', as: 'department' });
 db.User.belongsTo(db.ResearchGroup, { foreignKey: 'research_group_id', as: 'research_group' });
 db.User.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });
 db.User.belongsTo(db.Region, { foreignKey: 'province_id', as: 'province' });
 db.User.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });
 db.User.belongsTo(db.Region, { foreignKey: 'district_id', as: 'district' });
 
-db.ResearchGroup.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'organization' });
+db.Department.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'organization' });
+db.ResearchGroup.belongsTo(db.Department, { foreignKey: 'department_id', as: 'department' });
 
 // 管理员相关关联
 db.Administrator.belongsTo(db.Role, { foreignKey: 'role_id', as: 'role' });

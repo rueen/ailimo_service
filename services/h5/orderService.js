@@ -1377,18 +1377,33 @@ const getOrganizationList = async () => {
 };
 
 /**
- * 获取课题组列表
+ * 获取学院列表
  * @param {Number} organization_id - 组织ID（可选）
  * @returns {Promise<Array>}
  */
-const getResearchGroupList = async (organization_id) => {
+const getDepartmentList = async (organization_id) => {
   try {
     const where = organization_id ? { organization_id: organization_id } : {};
+    return await db.Department.findAll({
+      where,
+      order: [['name', 'ASC']]
+    });
+  } catch (error) {
+    logger.error('Get department list failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取课题组列表
+ * @param {Number} department_id - 学院ID（可选）
+ * @returns {Promise<Array>}
+ */
+const getResearchGroupList = async (department_id) => {
+  try {
+    const where = department_id ? { department_id: department_id } : {};
     return await db.ResearchGroup.findAll({
       where,
-      include: [
-        { model: db.Organization, as: 'organization', attributes: ['id', 'name'] }
-      ],
       order: [['name', 'ASC']]
     });
   } catch (error) {
@@ -1433,6 +1448,7 @@ module.exports = {
   getReagentBrandList,
   getReagentSpecificationList,
   getOrganizationList,
+  getDepartmentList,
   getResearchGroupList,
   getEnvironmentTypeList,
   getAnimalTypeList,

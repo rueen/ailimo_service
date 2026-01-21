@@ -59,9 +59,18 @@ router.post('/organizations', adminAuth, permission('organization:create'), user
 router.put('/organizations/:id', adminAuth, permission('organization:update'), userController.updateOrganization);
 router.delete('/organizations/:id', adminAuth, permission('organization:delete'), userController.deleteOrganization);
 
+// 学院
+router.get('/departments', adminAuth, userController.getDepartmentList);
+router.get('/departments/options', adminAuth, userController.getDepartmentOptions);
+router.get('/departments/:id', adminAuth, permission('department:detail'), userController.getDepartmentDetail);
+router.post('/departments', adminAuth, permission('department:create'), userController.createDepartment);
+router.put('/departments/:id', adminAuth, permission('department:update'), userController.updateDepartment);
+router.delete('/departments/:id', adminAuth, permission('department:delete'), userController.deleteDepartment);
+
 // 课题组
 router.get('/research-groups', adminAuth, userController.getResearchGroupList);
 router.get('/research-groups/options', adminAuth, userController.getResearchGroupOptions);
+router.get('/research-groups/:id', adminAuth, permission('research_group:detail'), userController.getResearchGroupDetail);
 router.post('/research-groups', adminAuth, permission('research_group:create'), userController.createResearchGroup);
 router.put('/research-groups/:id', adminAuth, permission('research_group:update'), userController.updateResearchGroup);
 router.delete('/research-groups/:id', adminAuth, permission('research_group:delete'), userController.deleteResearchGroup);

@@ -84,6 +84,7 @@ const login = async (phone, code) => {
       where: { phone },
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
+        { model: db.Department, as: 'department', attributes: ['id', 'name'] },
         { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] }
       ]
     });
@@ -109,6 +110,7 @@ const login = async (phone, code) => {
         name: user.name,
         phone: user.phone,
         organization: user.organization,
+        department: user.department,
         research_group: user.research_group,
         status: user.status,
         audit_status: user.audit_status,
@@ -130,7 +132,12 @@ const register = async (userData) => {
   const transaction = await db.sequelize.transaction();
   
   try {
-    const { name, phone, code, organization_id, research_group_id, province_id, city_id, district_id, address } = userData;
+    const { 
+      name, phone, code, 
+      organization_id, department_id, research_group_id,
+      user_input_organization_name, user_input_department_name, user_input_research_group_name,
+      province_id, city_id, district_id, address 
+    } = userData;
 
     // 查询最新的验证码记录
     const smsCode = await db.SmsCode.findOne({
@@ -154,6 +161,40 @@ const register = async (userData) => {
       throw new Error('该手机号已注册');
     }
 
+    // 验证组织机构/学院/课题组逻辑
+    if (organization_id) {
+      const org = await db.Organization.findByPk(organization_id);
+      if (!org) {
+        throw new Error('组织机构不存在');
+      }
+    } else if (!user_input_organization_name) {
+      throw new Error('请选择组织机构或输入组织机构名称');
+    }
+
+    if (department_id) {
+      const dept = await db.Department.findByPk(department_id);
+      if (!dept) {
+        throw new Error('学院不存在');
+      }
+      if (organization_id && dept.organization_id !== organization_id) {
+        throw new Error('学院不属于所选的组织机构');
+      }
+    } else if (!user_input_department_name) {
+      throw new Error('请选择学院或输入学院名称');
+    }
+
+    if (research_group_id) {
+      const group = await db.ResearchGroup.findByPk(research_group_id);
+      if (!group) {
+        throw new Error('课题组不存在');
+      }
+      if (department_id && group.department_id !== department_id) {
+        throw new Error('课题组不属于所选的学院');
+      }
+    } else if (!user_input_research_group_name) {
+      throw new Error('请选择课题组或输入课题组名称');
+    }
+
     // 验证地区ID（可选）
     if (province_id || city_id || district_id) {
       const regionValidation = await validator.validateRegionIdsOptional(province_id, city_id, district_id);
@@ -174,8 +215,12 @@ const register = async (userData) => {
       user_no: userNo,
       name,
       phone,
-      organization_id,
-      research_group_id,
+      organization_id: organization_id || null,
+      department_id: department_id || null,
+      research_group_id: research_group_id || null,
+      user_input_organization_name: organization_id ? null : user_input_organization_name,
+      user_input_department_name: department_id ? null : user_input_department_name,
+      user_input_research_group_name: research_group_id ? null : user_input_research_group_name,
       province_id,
       city_id,
       district_id,
@@ -190,6 +235,7 @@ const register = async (userData) => {
     const userWithRelations = await db.User.findByPk(user.id, {
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
+        { model: db.Department, as: 'department', attributes: ['id', 'name'] },
         { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] }
       ]
     });
@@ -207,6 +253,7 @@ const register = async (userData) => {
         name: userWithRelations.name,
         phone: userWithRelations.phone,
         organization: userWithRelations.organization,
+        department: userWithRelations.department,
         research_group: userWithRelations.research_group,
         status: userWithRelations.status,
         audit_status: userWithRelations.audit_status,
@@ -231,6 +278,7 @@ const getProfile = async (userId) => {
       attributes: { exclude: ['audit_by'] },
       include: [
         { model: db.Organization, as: 'organization', attributes: ['id', 'name'] },
+        { model: db.Department, as: 'department', attributes: ['id', 'name'] },
         { model: db.ResearchGroup, as: 'research_group', attributes: ['id', 'name'] },
         { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
         { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },

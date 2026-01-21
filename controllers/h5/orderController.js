@@ -370,12 +370,25 @@ const getOrganizationList = async (req, res, next) => {
 };
 
 /**
+ * 获取学院列表
+ */
+const getDepartmentList = async (req, res, next) => {
+  try {
+    const { organization_id } = req.query;
+    const list = await orderService.getDepartmentList(organization_id);
+    return response.success(res, list);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 获取课题组列表
  */
 const getResearchGroupList = async (req, res, next) => {
   try {
-    const { organization_id } = req.query;
-    const list = await orderService.getResearchGroupList(organization_id);
+    const { department_id } = req.query;
+    const list = await orderService.getResearchGroupList(department_id);
     return response.success(res, list);
   } catch (err) {
     next(err);
@@ -466,6 +479,7 @@ module.exports = {
   getReagentBrandList,
   getReagentSpecificationList,
   getOrganizationList,
+  getDepartmentList,
   getResearchGroupList,
   getEnvironmentTypeList,
   getAnimalTypeList,

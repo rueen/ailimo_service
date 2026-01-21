@@ -1,37 +1,37 @@
 /**
- * 课题组模型
+ * 学院模型
  */
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const ResearchGroup = sequelize.define('ResearchGroup', {
+  const Department = sequelize.define('Department', {
     id: {
       type: DataTypes.INTEGER.UNSIGNED,
       primaryKey: true,
       autoIncrement: true,
-      comment: '课题组ID'
+      comment: '学院ID'
     },
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      comment: '课题组名称'
+      comment: '学院名称'
     },
-    department_id: {
+    organization_id: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      comment: '所属学院ID'
+      comment: '所属组织机构ID'
     }
   }, {
-    tableName: 'research_groups',
+    tableName: 'departments',
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     indexes: [
-      { fields: ['department_id'] },
-      { unique: true, fields: ['name', 'department_id'] }
+      { fields: ['organization_id'] },
+      { unique: true, fields: ['name', 'organization_id'] }
     ],
-    comment: '课题组表'
+    comment: '学院表'
   });
 
-  return ResearchGroup;
+  return Department;
 };
