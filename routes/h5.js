@@ -49,7 +49,6 @@ router.get('/my-orders/:type/:id', h5Auth, orderController.getOrderDetail);
 
 // ==================== 时间段查询 ====================
 router.get('/equipment-time-slots', orderController.getEquipmentTimeSlots);
-router.get('/cage-time-slots', orderController.getCageTimeSlots);
 router.get('/experiment-time-slots', orderController.getExperimentTimeSlots);
 
 // ==================== 基础数据查询 ====================
@@ -57,7 +56,7 @@ router.get('/equipment', orderController.getEquipmentList);
 router.get('/equipment/:id', orderController.getEquipmentDetail);
 router.get('/equipment/:id/available-slots', orderController.getEquipmentAvailableSlots);
 router.get('/cages/environments-by-animal-type', orderController.getEnvironmentsByAnimalType);
-router.get('/cages/available-time-slots', orderController.getAvailableTimeSlotsByType);
+router.get('/cages/available-quantity', orderController.getCageAvailableQuantity);
 router.get('/cages', orderController.getCageList);
 router.get('/operation-contents', orderController.getOperationContentList);
 router.get('/animal-brands', orderController.getAnimalBrandList);

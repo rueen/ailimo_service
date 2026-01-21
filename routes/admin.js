@@ -96,7 +96,7 @@ router.get('/equipment-available-slots', adminAuth, equipmentController.getAvail
 // ==================== 笼位预约 ====================
 // 笼位管理
 router.get('/cages/environments-by-animal-type', adminAuth, cageController.getEnvironmentsByAnimalType);
-router.get('/cages/available-time-slots', adminAuth, cageController.getAvailableTimeSlotsByType);
+router.get('/cages/available-quantity', adminAuth, cageController.getCageAvailableQuantity);
 router.get('/cages', adminAuth, permission('cage:list'), cageController.getCageList);
 router.get('/cages/:id', adminAuth, permission('cage:detail'), cageController.getCageDetail);
 router.post('/cages', adminAuth, permission('cage:create'), cageController.createCage);
@@ -118,14 +118,6 @@ router.get('/cage-purposes/options', adminAuth, cageController.getPurposeOptions
 router.post('/cage-purposes', adminAuth, permission('cage_purpose:create'), cageController.createPurpose);
 router.put('/cage-purposes/:id', adminAuth, permission('cage_purpose:update'), cageController.updatePurpose);
 router.delete('/cage-purposes/:id', adminAuth, permission('cage_purpose:delete'), cageController.deletePurpose);
-
-// 笼位时间段
-router.get('/cage-time-slots', adminAuth, cageController.getTimeSlotList);
-router.get('/cage-time-slots/options', adminAuth, cageController.getTimeSlotOptions);
-router.post('/cage-time-slots', adminAuth, permission('cage_time_slot:create'), cageController.createTimeSlot);
-router.put('/cage-time-slots/:id', adminAuth, permission('cage_time_slot:update'), cageController.updateTimeSlot);
-router.delete('/cage-time-slots/:id', adminAuth, permission('cage_time_slot:delete'), cageController.deleteTimeSlot);
-router.get('/cage-available-slots', adminAuth, cageController.getAvailableTimeSlots);
 
 // ==================== 实验代操作 ====================
 // 实验操作订单

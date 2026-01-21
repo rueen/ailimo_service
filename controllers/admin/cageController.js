@@ -91,11 +91,11 @@ const getEnvironmentsByAnimalType = async (req, res, next) => {
 };
 
 /**
- * 查询笼位可用时间段
+ * 查询笼位剩余可用数量
  */
-const getAvailableTimeSlotsByType = async (req, res, next) => {
+const getCageAvailableQuantity = async (req, res, next) => {
   try {
-    const { animal_type_id, environment_id, date } = req.query;
+    const { animal_type_id, environment_id, start_date, end_date } = req.query;
     
     if (!animal_type_id) {
       return response.badRequest(res, '动物类型ID不能为空');
@@ -103,14 +103,15 @@ const getAvailableTimeSlotsByType = async (req, res, next) => {
     if (!environment_id) {
       return response.badRequest(res, '环境ID不能为空');
     }
-    if (!date) {
-      return response.badRequest(res, '查询日期不能为空');
+    if (!start_date) {
+      return response.badRequest(res, '开始日期不能为空');
     }
     
-    const result = await cageService.getAvailableTimeSlotsByType({
+    const result = await cageService.getCageAvailableQuantity({
       animal_type_id,
       environment_id,
-      date
+      start_date,
+      end_date: end_date || null
     });
     return response.success(res, result);
   } catch (err) {
@@ -290,96 +291,6 @@ const getPurposeOptions = async (req, res, next) => {
   }
 };
 
-// ==================== 时间段管理 ====================
-
-/**
- * 获取时间段列表
- */
-const getTimeSlotList = async (req, res, next) => {
-  try {
-    const { status } = req.query;
-    const list = await cageService.getTimeSlotList(status);
-    return response.success(res, list);
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * 创建时间段
- */
-const createTimeSlot = async (req, res, next) => {
-  try {
-    const { start_time, end_time, description, sort_order } = req.body;
-    
-    // 参数验证
-    if (!start_time || !end_time) {
-      return response.badRequest(res, '开始时间和结束时间不能为空');
-    }
-
-    const timeSlot = await cageService.createTimeSlot({
-      start_time,
-      end_time,
-      description,
-      sort_order
-    });
-    return response.success(res, timeSlot, '创建成功');
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * 更新时间段
- */
-const updateTimeSlot = async (req, res, next) => {
-  try {
-    const timeSlot = await cageService.updateTimeSlot(req.params.id, req.body);
-    return response.success(res, timeSlot, '更新成功');
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * 删除时间段
- */
-const deleteTimeSlot = async (req, res, next) => {
-  try {
-    await cageService.deleteTimeSlot(req.params.id);
-    return response.success(res, null, '删除成功');
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * 获取笼位时间段选项列表（用于下拉选择）
- */
-const getTimeSlotOptions = async (req, res, next) => {
-  try {
-    const options = await cageService.getTimeSlotOptions();
-    return response.success(res, options);
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * 获取指定笼位在指定日期的可用时间段
- */
-const getAvailableTimeSlots = async (req, res, next) => {
-  try {
-    const { cageId, date } = req.query;
-    if (!cageId || !date) {
-      throw new Error('笼位ID和日期不能为空');
-    }
-    const slots = await cageService.getAvailableTimeSlots(cageId, date);
-    return response.success(res, slots);
-  } catch (err) {
-    next(err);
-  }
-};
 
 module.exports = {
   // 笼位管理
@@ -389,7 +300,7 @@ module.exports = {
   updateCage,
   deleteCage,
   getEnvironmentsByAnimalType,
-  getAvailableTimeSlotsByType,
+  getCageAvailableQuantity,
   
   // 订单管理
   getReservationList,
@@ -405,13 +316,5 @@ module.exports = {
   getPurposeOptions,
   createPurpose,
   updatePurpose,
-  deletePurpose,
-  
-  // 时间段管理
-  getTimeSlotList,
-  getTimeSlotOptions,
-  createTimeSlot,
-  updateTimeSlot,
-  deleteTimeSlot,
-  getAvailableTimeSlots
+  deletePurpose
 };

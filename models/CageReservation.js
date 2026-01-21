@@ -57,15 +57,15 @@ module.exports = (sequelize) => {
       allowNull: false,
       comment: '用途ID'
     },
-    reservation_date: {
+    start_date: {
       type: DataTypes.DATEONLY,
       allowNull: false,
-      comment: '预约日期'
+      comment: '预约开始日期'
     },
-    time_slots: {
-      type: DataTypes.JSON,
-      allowNull: false,
-      comment: '预约时间段数组（时间段快照），格式：["09:00-10:00", "10:00-11:00"]'
+    end_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      comment: '预约结束日期（NULL表示长期预约）'
     },
     status: {
       type: DataTypes.TINYINT,
@@ -105,7 +105,8 @@ module.exports = (sequelize) => {
       { fields: ['order_sn'], unique: true },
       { fields: ['cage_id'] },
       { fields: ['user_id'] },
-      { fields: ['reservation_date'] },
+      { fields: ['start_date'] },
+      { fields: ['end_date'] },
       { fields: ['status'] },
       { fields: ['source'] },
       { fields: ['created_by_admin_id'] }

@@ -161,7 +161,7 @@ const createCageReservation = async (userId, data) => {
   const transaction = await db.sequelize.transaction();
   
   try {
-    const { animal_type_id, environment_id, reservation_date, time_slots, quantity } = data;
+    const { animal_type_id, environment_id, start_date, end_date, quantity } = data;
 
     // 根据动物类型+环境查询匹配的笼位，并加锁防止并发问题
     const cage = await db.Cage.findOne({
@@ -183,19 +183,16 @@ const createCageReservation = async (userId, data) => {
       throw new Error(`预约数量不能超过笼位总数量（${cage.quantity}）`);
     }
 
-    // 检查时间段可用数量
-    const timeSlotArray = typeof time_slots === 'string' ? JSON.parse(time_slots) : time_slots;
-    for (const slot of timeSlotArray) {
-      const available = await checkCageAvailability(
-        cage.id,
-        reservation_date,
-        slot,
-        transaction
-      );
+    // 检查日期范围内的可用数量
+    const availableQuantity = await checkCageAvailabilityForDateRange(
+      cage.id,
+      start_date,
+      end_date,
+      transaction
+    );
 
-      if (available < quantity) {
-        throw new Error(`时间段 ${slot} 可用数量不足，当前可用：${available}`);
-      }
+    if (availableQuantity < quantity) {
+      throw new Error(`日期范围内可用数量不足，当前最小可用：${availableQuantity}`);
     }
 
     // 生成订单号
@@ -226,37 +223,77 @@ const createCageReservation = async (userId, data) => {
 };
 
 /**
- * 检查笼位在指定日期和时间段的可用数量
+ * 检查笼位在指定日期范围的可用数量（返回最小值）
+ * @param {Number} cageId - 笼位ID
+ * @param {String} startDate - 开始日期 (YYYY-MM-DD)
+ * @param {String} endDate - 结束日期 (YYYY-MM-DD 或 NULL)
+ * @param {Object} transaction - 事务对象
+ * @returns {Promise<Number>} 日期范围内的最小可用数量
  */
-const checkCageAvailability = async (cageId, date, timeSlot, transaction) => {
+const checkCageAvailabilityForDateRange = async (cageId, startDate, endDate, transaction) => {
   const cage = await db.Cage.findByPk(cageId, { transaction });
   if (!cage) {
     throw new Error('笼位不存在');
   }
 
-  // 查询该笼位、该日期的所有待审核和进行中的预约
-  // 注意：不在 SQL 中过滤 time_slots，因为 JSON 字段的 LIKE 查询不可靠
+  const totalQuantity = cage.quantity;
+
+  // 如果是长期预约（end_date为null），只检查开始日期当天
+  if (!endDate) {
+    const reservedQuantity = await getReservedQuantityForDate(cageId, startDate, transaction);
+    return totalQuantity - reservedQuantity;
+  }
+
+  // 遍历日期范围内的每一天，计算最小可用数量
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  let minAvailable = totalQuantity;
+
+  for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    const dateStr = date.toISOString().split('T')[0];
+    const reservedQuantity = await getReservedQuantityForDate(cageId, dateStr, transaction);
+    const available = totalQuantity - reservedQuantity;
+    minAvailable = Math.min(minAvailable, available);
+  }
+
+  return Math.max(0, minAvailable);
+};
+
+/**
+ * 获取指定笼位在指定日期的已预约数量
+ * @param {Number} cageId - 笼位ID
+ * @param {String} date - 日期 (YYYY-MM-DD)
+ * @param {Object} transaction - 事务对象
+ * @param {Number} excludeReservationId - 排除的订单ID
+ * @returns {Promise<Number>}
+ */
+const getReservedQuantityForDate = async (cageId, date, transaction, excludeReservationId = null) => {
+  const where = {
+    cage_id: cageId,
+    status: [0, 1], // 待审核和进行中
+    [Op.or]: [
+      // 情况1：start_date <= date AND (end_date >= date OR end_date IS NULL)
+      {
+        start_date: { [Op.lte]: date },
+        [Op.or]: [
+          { end_date: { [Op.gte]: date } },
+          { end_date: null }
+        ]
+      }
+    ]
+  };
+
+  if (excludeReservationId) {
+    where.id = { [Op.ne]: excludeReservationId };
+  }
+
   const reservations = await db.CageReservation.findAll({
-    where: {
-      cage_id: cageId,
-      reservation_date: date,
-      status: [0, 1] // 待审核和进行中的订单都占用数量
-    },
-    attributes: ['quantity', 'time_slots'],
+    where,
+    attributes: ['quantity'],
     transaction
   });
 
-  // 在应用层过滤并计算已预约的数量
-  let reservedQuantity = 0;
-  for (const reservation of reservations) {
-    const slots = reservation.time_slots;
-    // 确保 slots 是数组，并且包含指定的时间段
-    if (Array.isArray(slots) && slots.includes(timeSlot)) {
-      reservedQuantity += reservation.quantity;
-    }
-  }
-
-  return cage.quantity - reservedQuantity;
+  return reservations.reduce((sum, r) => sum + r.quantity, 0);
 };
 
 // ==================== 实验代操作订单 ====================
@@ -476,7 +513,7 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
           { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
           { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
         ];
-      typeConfig = { dateField: 'reservation_date' }; // 笼位预约保留 reservation_date
+      typeConfig = { dateField: 'start_date' }; // 笼位预约使用 start_date
         break;
       case 'experiment':
         model = db.ExperimentOperation;
@@ -597,7 +634,7 @@ const formatOrderForList = (order, type, typeConfig) => {
       break;
     case 'cage':
       title = `${orderData.animal_type?.name || ''}-${orderData.environment?.name || ''}-${orderData.quantity}个`;
-      date = orderData.reservation_date;
+      date = orderData.start_date;
       break;
     case 'experiment':
       title = `${orderData.operation_content?.name || ''}-${orderData.animal_type?.name || ''}-${orderData.quantity}只`;
@@ -867,29 +904,6 @@ const getEquipmentTimeSlots = async () => {
   }
 };
 
-/**
- * 获取笼位预约时间段列表
- * @returns {Promise<Array>}
- */
-const getCageTimeSlots = async () => {
-  try {
-    const slots = await db.CageTimeSlot.findAll({
-      where: { status: 1 },
-      order: [['sort_order', 'ASC']]
-    });
-    
-    // 添加 display_time 字段
-    const { formatTimeSlot } = require('../../utils/dateFormat');
-    return slots.map(slot => {
-      const slotData = slot.toJSON();
-      slotData.display_time = formatTimeSlot(slotData.start_time, slotData.end_time);
-      return slotData;
-    });
-  } catch (error) {
-    logger.error('Get cage time slots failed:', error);
-    throw error;
-  }
-};
 
 /**
  * 获取实验代操作时间段列表
@@ -1103,13 +1117,13 @@ const getEnvironmentsByAnimalType = async (animalTypeId) => {
 };
 
 /**
- * 查询笼位可用时间段
+ * 查询笼位在指定日期范围内的剩余可用数量
  * @param {Object} params - 查询参数
  * @returns {Promise<Object>}
  */
-const getAvailableTimeSlotsByType = async (params) => {
+const getCageAvailableQuantity = async (params) => {
   try {
-    const { animal_type_id, environment_id, date } = params;
+    const { animal_type_id, environment_id, start_date, end_date } = params;
 
     // 验证动物类型和环境是否存在
     const animalType = await db.AnimalType.findByPk(animal_type_id);
@@ -1135,59 +1149,26 @@ const getAvailableTimeSlotsByType = async (params) => {
     if (!cage) {
       return {
         total_quantity: 0,
-        time_slots: []
+        available_quantity: 0
       };
     }
 
     const totalQuantity = cage.quantity;
 
-    // 获取所有启用的时间段
-    const allTimeSlots = await db.CageTimeSlot.findAll({
-      where: { status: 1 },
-      order: [['sort_order', 'ASC'], ['start_time', 'ASC']]
-    });
-
-    // 查询该日期、该动物类型+环境的所有预约
-    const reservations = await db.CageReservation.findAll({
-      where: {
-        animal_type_id,
-        environment_id,
-        reservation_date: date,
-        status: [0, 1] // 待审核和进行中
-      },
-      attributes: ['time_slots', 'quantity']
-    });
-
-    // 计算每个时间段的已预约数量
-    const timeSlots = allTimeSlots.map(slot => {
-      const timeSlotStr = `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`;
-      
-      let reservedQuantity = 0;
-      for (const reservation of reservations) {
-        const slots = reservation.time_slots;
-        if (slots && slots.includes(timeSlotStr)) {
-          reservedQuantity += reservation.quantity;
-        }
-      }
-
-      const availableQuantity = Math.max(0, totalQuantity - reservedQuantity);
-
-      return {
-        id: slot.id,
-        start_time: slot.start_time,
-        end_time: slot.end_time,
-        display_time: `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`,
-        description: slot.description || '',
-        available_quantity: availableQuantity
-      };
-    });
+    // 计算日期范围内的最小可用数量
+    const availableQuantity = await checkCageAvailabilityForDateRange(
+      cage.id,
+      start_date,
+      end_date,
+      null // 无事务
+    );
 
     return {
       total_quantity: totalQuantity,
-      time_slots: timeSlots
+      available_quantity: availableQuantity
     };
   } catch (error) {
-    logger.error('Get available time slots by type failed:', error);
+    logger.error('Get cage available quantity failed:', error);
     throw error;
   }
 };
@@ -1433,7 +1414,6 @@ module.exports = {
   
   // 时间段
   getEquipmentTimeSlots,
-  getCageTimeSlots,
   getExperimentTimeSlots,
   
   // 基础数据
@@ -1442,7 +1422,7 @@ module.exports = {
   getEquipmentAvailableSlots,
   getCageList,
   getEnvironmentsByAnimalType,
-  getAvailableTimeSlotsByType,
+  getCageAvailableQuantity,
   getOperationContentList,
   getAnimalBrandList,
   getAnimalVarietyList,

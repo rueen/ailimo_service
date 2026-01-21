@@ -157,17 +157,6 @@ const getEquipmentTimeSlots = async (req, res, next) => {
   }
 };
 
-/**
- * 获取笼位预约时间段列表
- */
-const getCageTimeSlots = async (req, res, next) => {
-  try {
-    const slots = await orderService.getCageTimeSlots();
-    return response.success(res, slots);
-  } catch (err) {
-    next(err);
-  }
-};
 
 /**
  * 获取实验代操作时间段列表
@@ -254,11 +243,11 @@ const getEnvironmentsByAnimalType = async (req, res, next) => {
 };
 
 /**
- * 查询笼位可用时间段
+ * 查询笼位剩余可用数量
  */
-const getAvailableTimeSlotsByType = async (req, res, next) => {
+const getCageAvailableQuantity = async (req, res, next) => {
   try {
-    const { animal_type_id, environment_id, date } = req.query;
+    const { animal_type_id, environment_id, start_date, end_date } = req.query;
     
     if (!animal_type_id) {
       return response.badRequest(res, '动物类型ID不能为空');
@@ -266,14 +255,15 @@ const getAvailableTimeSlotsByType = async (req, res, next) => {
     if (!environment_id) {
       return response.badRequest(res, '环境ID不能为空');
     }
-    if (!date) {
-      return response.badRequest(res, '查询日期不能为空');
+    if (!start_date) {
+      return response.badRequest(res, '开始日期不能为空');
     }
     
-    const result = await orderService.getAvailableTimeSlotsByType({
+    const result = await orderService.getCageAvailableQuantity({
       animal_type_id,
       environment_id,
-      date
+      start_date,
+      end_date: end_date || null
     });
     return response.success(res, result);
   } catch (err) {
@@ -458,7 +448,6 @@ module.exports = {
   
   // 时间段
   getEquipmentTimeSlots,
-  getCageTimeSlots,
   getExperimentTimeSlots,
   
   // 基础数据
@@ -467,7 +456,7 @@ module.exports = {
   getEquipmentAvailableSlots,
   getCageList,
   getEnvironmentsByAnimalType,
-  getAvailableTimeSlotsByType,
+  getCageAvailableQuantity,
   getOperationContentList,
   getAnimalBrandList,
   getAnimalVarietyList,

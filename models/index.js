@@ -50,7 +50,6 @@ db.EquipmentTimeSlot = require('./EquipmentTimeSlot')(sequelize);
 db.Cage = require('./Cage')(sequelize);
 db.CageReservation = require('./CageReservation')(sequelize);
 db.CagePurpose = require('./CagePurpose')(sequelize);
-db.CageTimeSlot = require('./CageTimeSlot')(sequelize);
 
 // 实验代操作模型
 db.OperationContent = require('./OperationContent')(sequelize);

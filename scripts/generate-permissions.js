@@ -131,17 +131,6 @@ const PERMISSION_CONFIG = {
           { name: '删除用途', code: 'cage_purpose:delete' },
         ]
       },
-      // 时间段管理
-      {
-        name: '时间段管理',
-        code: 'cage_time_slot',
-        children: [
-          { name: '时间段列表', code: 'cage_time_slot:list' },
-          { name: '新增时间段', code: 'cage_time_slot:create' },
-          { name: '编辑时间段', code: 'cage_time_slot:update' },
-          { name: '删除时间段', code: 'cage_time_slot:delete' },
-        ]
-      },
     ]
   },
   // - 实验代操作
