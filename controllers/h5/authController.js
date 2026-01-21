@@ -67,7 +67,12 @@ const login = async (req, res, next) => {
  */
 const register = async (req, res, next) => {
   try {
-    const { name, phone, code, organization_id, research_group_id, province_id, city_id, district_id, address } = req.body;
+    const { 
+      name, phone, code, 
+      organization_id, department_id, research_group_id,
+      user_input_organization_name, user_input_department_name, user_input_research_group_name,
+      province_id, city_id, district_id, address 
+    } = req.body;
 
     // 参数验证
     if (!name || !phone || !code) {
@@ -88,7 +93,11 @@ const register = async (req, res, next) => {
       phone,
       code,
       organization_id,
+      department_id,
       research_group_id,
+      user_input_organization_name,
+      user_input_department_name,
+      user_input_research_group_name,
       province_id,
       city_id,
       district_id,

@@ -15,6 +15,23 @@ const { Op } = require('sequelize');
  */
 const sendCode = async (phone, type) => {
   try {
+    // type=2 表示注册，type=1 表示登录
+    // 注册时检查手机号是否已被注册
+    if (type === 2) {
+      const existUser = await db.User.findOne({ where: { phone } });
+      if (existUser) {
+        throw new Error('该手机号已注册，请直接登录');
+      }
+    }
+    
+    // 登录时检查手机号是否已注册
+    if (type === 1) {
+      const existUser = await db.User.findOne({ where: { phone } });
+      if (!existUser) {
+        throw new Error('该手机号未注册，请先注册');
+      }
+    }
+    
     // 检查当天发送次数
     const today = new Date();
     today.setHours(0, 0, 0, 0);
