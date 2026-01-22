@@ -145,6 +145,7 @@ const PERMISSION_CONFIG = {
       { name: '审核订单', code: 'experiment_operation:audit' },
       { name: '完成订单', code: 'experiment_operation:complete' },
       { name: '取消订单', code: 'experiment_operation:cancel' },
+      { name: '代操作统计', code: 'experiment_operation:statistics' },
       // 操作内容管理
       {
         name: '操作内容管理',

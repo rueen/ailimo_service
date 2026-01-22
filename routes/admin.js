@@ -131,6 +131,7 @@ router.delete('/cage-purposes/:id', adminAuth, permission('cage_purpose:delete')
 // ==================== 实验代操作 ====================
 // 实验操作订单
 router.get('/experiment-operations', adminAuth, permission('experiment_operation:list'), experimentController.getOperationList);
+router.get('/experiment-operations/statistics', adminAuth, permission('experiment_operation:statistics'), statisticsController.getExperimentOperationStatistics);
 router.get('/experiment-operations/:id', adminAuth, permission('experiment_operation:detail'), experimentController.getOperationDetail);
 router.post('/experiment-operations', adminAuth, permission('experiment_operation:create'), experimentController.createOperation);
 router.put('/experiment-operations/:id', adminAuth, permission('experiment_operation:update'), experimentController.updateOperation);
