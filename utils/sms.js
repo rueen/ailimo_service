@@ -1,6 +1,7 @@
 /**
  * 短信工具
  */
+const Dysmsapi20170525 = require('@alicloud/dysmsapi20170525');
 const config = require('../config');
 const logger = require('../config/logger');
 const { generateCode } = require('./crypto');
@@ -30,37 +31,42 @@ const sendCode = async (phone, options = {}) => {
     };
   }
   
-  // TODO: 实际短信发送逻辑
-  // 这里预留接入第三方短信服务商的代码
+  // 阿里云短信发送
   try {
-    // 示例：阿里云短信服务
-    // const Core = require('@alicloud/pop-core');
-    // const client = new Core({
-    //   accessKeyId: config.sms.accessKeyId,
-    //   accessKeySecret: config.sms.accessKeySecret,
-    //   endpoint: 'https://dysmsapi.aliyuncs.com',
-    //   apiVersion: '2017-05-25'
-    // });
+    // 创建客户端
+    const client = new Dysmsapi20170525({
+      accessKeyId: config.sms.accessKeyId,
+      accessKeySecret: config.sms.accessKeySecret,
+      endpoint: 'dysmsapi.aliyuncs.com'
+    });
     
-    // const params = {
-    //   PhoneNumbers: phone,
-    //   SignName: config.sms.signName,
-    //   TemplateCode: config.sms.templateCode,
-    //   TemplateParam: JSON.stringify({ code })
-    // };
+    // 发送短信请求参数
+    const sendSmsRequest = new Dysmsapi20170525.SendSmsRequest({
+      phoneNumbers: phone,
+      signName: config.sms.signName,
+      templateCode: config.sms.templateCode,
+      templateParam: JSON.stringify({ code })
+    });
     
-    // const result = await client.request('SendSms', params, { method: 'POST' });
+    // 发送短信
+    const result = await client.sendSms(sendSmsRequest);
     
-    logger.info(`发送验证码到 ${phone}: ${code}`);
-    
-    return {
-      success: true,
-      code,
-      message: '验证码已发送'
-    };
+    // 检查发送结果
+    if (result.body.code === 'OK') {
+      logger.info(`短信发送成功 - 手机号: ${phone}, 验证码: ${code}, BizId: ${result.body.bizId}`);
+      return {
+        success: true,
+        code,
+        message: '验证码已发送',
+        bizId: result.body.bizId
+      };
+    } else {
+      logger.error(`短信发送失败 - Code: ${result.body.code}, Message: ${result.body.message}`);
+      throw new Error(result.body.message || '短信发送失败');
+    }
   } catch (err) {
-    logger.error(`发送验证码失败: ${err.message}`);
-    throw new Error('发送验证码失败');
+    logger.error(`发送短信异常 - 手机号: ${phone}, 错误: ${err.message}`);
+    throw new Error('发送验证码失败，请稍后重试');
   }
 };
 
