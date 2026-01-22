@@ -15,6 +15,8 @@ const { Op } = require('sequelize');
  */
 const sendCode = async (phone, type) => {
   try {
+    // ===== 第一步：验证业务规则（不影响频率限制） =====
+    
     // type=2 表示注册，type=1 表示登录
     // 注册时检查手机号是否已被注册
     if (type === 2) {
@@ -32,11 +34,29 @@ const sendCode = async (phone, type) => {
       }
     }
     
+    // ===== 第二步：检查发送频率（只有业务规则通过后才检查） =====
+    
+    // 检查1分钟内是否已发送过
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const recentCode = await db.SmsCode.findOne({
+      where: {
+        phone,
+        created_at: {
+          [Op.gte]: oneMinuteAgo
+        }
+      },
+      order: [['created_at', 'DESC']]
+    });
+
+    if (recentCode) {
+      throw new Error('发送验证码过于频繁，请1分钟后再试');
+    }
+    
     // 检查当天发送次数
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const count = await db.SmsCode.count({
+    const todayCount = await db.SmsCode.count({
       where: {
         phone,
         created_at: {
@@ -45,14 +65,14 @@ const sendCode = async (phone, type) => {
       }
     });
 
-    if (count >= config.sms.code.maxSendPerDay) {
+    if (todayCount >= config.sms.code.maxSendPerDay) {
       throw new Error('今日发送验证码次数已达上限');
     }
 
-    // 发送验证码
+    // ===== 第三步：发送验证码 =====
     const result = await sms.sendCode(phone);
 
-    // 保存验证码记录
+    // ===== 第四步：发送成功后才保存记录（这样创建时间就是真实发送时间） =====
     const expireTime = new Date(Date.now() + config.sms.code.expire * 1000);
     await db.SmsCode.create({
       phone,

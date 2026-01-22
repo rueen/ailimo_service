@@ -12,7 +12,7 @@ const orderController = require('../controllers/h5/orderController');
 const regionController = require('../controllers/common/regionController');
 
 // ==================== 认证相关 ====================
-router.post('/auth/send-code', smsLimiter, authController.sendCode);
+router.post('/auth/send-code', authController.sendCode);
 router.post('/auth/login', authController.login);
 router.post('/auth/register', authController.register);
 router.get('/auth/profile', h5Auth, authController.getProfile);
