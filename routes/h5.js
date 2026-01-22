@@ -80,4 +80,9 @@ router.get('/cases', orderController.getCaseList);
 router.get('/cases/:id', orderController.getCaseDetail);
 router.get('/company-info', orderController.getCompanyInfo);
 
+// ==================== 其他服务 ====================
+const otherServiceController = require('../controllers/h5/otherServiceController');
+router.get('/other-services', otherServiceController.getOtherServiceList);
+router.get('/other-services/:id', otherServiceController.getOtherServiceDetail);
+
 module.exports = router;

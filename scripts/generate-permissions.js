@@ -285,6 +285,15 @@ const PERMISSION_CONFIG = {
           { name: '编辑公司信息', code: 'company_info:update' },
         ]
       },
+      { name: '其他服务', code: 'other_service',
+        children: [
+          { name: '其他服务列表', code: 'other_service:list' },
+          { name: '其他服务详情', code: 'other_service:detail' },
+          { name: '新增其他服务', code: 'other_service:create' },
+          { name: '编辑其他服务', code: 'other_service:update' },
+          { name: '删除其他服务', code: 'other_service:delete' },
+        ]
+      },
     ]
   },
   // - 通用配置管理

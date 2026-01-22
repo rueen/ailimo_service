@@ -248,6 +248,14 @@ router.post('/animal-types', adminAuth, permission('animal_type:create'), conten
 router.put('/animal-types/:id', adminAuth, permission('animal_type:update'), contentController.updateAnimalType);
 router.delete('/animal-types/:id', adminAuth, permission('animal_type:delete'), contentController.deleteAnimalType);
 
+// 其他服务管理
+const otherServiceController = require('../controllers/admin/otherServiceController');
+router.get('/other-services', adminAuth, permission('other_service:list'), otherServiceController.getOtherServiceList);
+router.get('/other-services/:id', adminAuth, permission('other_service:detail'), otherServiceController.getOtherServiceDetail);
+router.post('/other-services', adminAuth, permission('other_service:create'), otherServiceController.createOtherService);
+router.put('/other-services/:id', adminAuth, permission('other_service:update'), otherServiceController.updateOtherService);
+router.delete('/other-services/:id', adminAuth, permission('other_service:delete'), otherServiceController.deleteOtherService);
+
 // ==================== 系统配置 ====================
 router.get('/system-configs', adminAuth, configController.getAllConfigs);
 router.get('/system-configs/:key', adminAuth, configController.getConfig);

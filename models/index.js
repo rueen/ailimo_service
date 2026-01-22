@@ -72,6 +72,7 @@ db.ReagentOrder = require('./ReagentOrder')(sequelize);
 // 其他模型
 db.Case = require('./Case')(sequelize);
 db.CompanyInfo = require('./CompanyInfo')(sequelize);
+db.OtherService = require('./OtherService')(sequelize);
 db.SystemConfig = require('./SystemConfig')(sequelize);
 db.SmsCode = require('./SmsCode')(sequelize);
 db.Region = require('./Region')(sequelize);
