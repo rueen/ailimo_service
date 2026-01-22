@@ -226,91 +226,164 @@ const getExperimentOperationDetailedStatistics = async (start_date, end_date) =>
       currentDate.add(1, 'day');
     }
 
-    // 2. 查询已完成订单的统计数据
-    const statistics = await db.ExperimentOperation.findAll({
-      attributes: [
-        [sequelize.fn('DATE', sequelize.col('completed_time')), 'date'],
-        'user_id',
-        'operation_content_id',
-        [sequelize.fn('SUM', sequelize.col('quantity')), 'total_quantity']
-      ],
+    // 2. 查询已完成的订单（获取完整数据，在应用层解析 time_slots）
+    const orders = await db.ExperimentOperation.findAll({
+      attributes: ['user_id', 'operation_content_id', 'quantity', 'time_slots'],
       where: {
-        status: 3, // 已完成
-        completed_time: {
-          [Op.gte]: start_date + ' 00:00:00',
-          [Op.lte]: end_date + ' 23:59:59'
-        }
+        status: 3 // 已完成
       },
-      group: ['date', 'user_id', 'operation_content_id'],
-      order: [
-        [sequelize.fn('DATE', sequelize.col('completed_time')), 'ASC'],
-        ['user_id', 'ASC'],
-        ['operation_content_id', 'ASC']
-      ],
       raw: true
     });
 
-    // 3. 获取涉及的用户信息
-    const userIds = [...new Set(statistics.map(s => s.user_id))];
-    let users = [];
-    if (userIds.length > 0) {
-      users = await db.User.findAll({
-        attributes: ['id', 'name'],
-        where: {
-          id: { [Op.in]: userIds }
-        },
-        order: [['id', 'ASC']],
-        raw: true
+    // 3. 解析 time_slots，按预约日期分组统计
+    const statisticsMap = new Map();
+    
+    orders.forEach(order => {
+      const timeSlots = typeof order.time_slots === 'string' 
+        ? JSON.parse(order.time_slots) 
+        : order.time_slots;
+      
+      // 从每个时间段中提取日期
+      const reservationDates = new Set();
+      timeSlots.forEach(slot => {
+        // 格式：["2026-01-22 09:00-12:00"]
+        const date = slot.split(' ')[0]; // 提取日期部分
+        
+        // 只统计在查询范围内的日期
+        if (date >= start_date && date <= end_date) {
+          reservationDates.add(date);
+        }
       });
-    }
+      
+      // 对每个预约日期累加数量
+      reservationDates.forEach(date => {
+        const key = `${date}_${order.user_id}_${order.operation_content_id}`;
+        const currentQuantity = statisticsMap.get(key) || 0;
+        statisticsMap.set(key, currentQuantity + order.quantity);
+      });
+    });
 
-    // 4. 获取每个用户涉及的操作类型
-    let userOperations = [];
-    if (statistics.length > 0) {
-      userOperations = await db.ExperimentOperation.findAll({
+    // 4. 提取涉及的用户ID和操作类型ID
+    const userIds = new Set();
+    const userOperationMap = new Map(); // 存储每个用户涉及的操作类型
+    
+    statisticsMap.forEach((quantity, key) => {
+      const [date, userId, operationContentId] = key.split('_');
+      userIds.add(parseInt(userId));
+      
+      if (!userOperationMap.has(userId)) {
+        userOperationMap.set(userId, new Set());
+      }
+      userOperationMap.get(userId).add(operationContentId);
+    });
+
+    // 5. 查询用户信息（包含组织、学院、课题组等关联信息）
+    let users = [];
+    if (userIds.size > 0) {
+      users = await db.User.findAll({
         attributes: [
-          'user_id',
-          'operation_content_id'
+          'id', 
+          'name', 
+          'user_no',
+          'phone',
+          'organization_id',
+          'department_id',
+          'research_group_id',
+          'user_input_organization_name',
+          'user_input_department_name',
+          'user_input_research_group_name'
         ],
         where: {
-          status: 3,
-          completed_time: {
-            [Op.gte]: start_date + ' 00:00:00',
-            [Op.lte]: end_date + ' 23:59:59'
-          }
+          id: { [Op.in]: Array.from(userIds) }
         },
-        include: [{
-          model: db.OperationContent,
-          as: 'operation_content',
-          attributes: ['id', 'name']
-        }],
-        group: ['user_id', 'operation_content_id'],
-        order: [['user_id', 'ASC'], ['operation_content_id', 'ASC']],
-        raw: true
+        include: [
+          {
+            model: db.Organization,
+            as: 'organization',
+            attributes: ['id', 'name'],
+            required: false
+          },
+          {
+            model: db.Department,
+            as: 'department',
+            attributes: ['id', 'name'],
+            required: false
+          },
+          {
+            model: db.ResearchGroup,
+            as: 'research_group',
+            attributes: ['id', 'name'],
+            required: false
+          }
+        ],
+        order: [['id', 'ASC']]
       });
     }
 
-    // 5. 组织用户和操作类型数据
+    // 6. 查询操作类型信息
+    const operationContentIds = new Set();
+    userOperationMap.forEach(ops => {
+      ops.forEach(id => operationContentIds.add(id));
+    });
+    
+    let operationContents = [];
+    if (operationContentIds.size > 0) {
+      operationContents = await db.OperationContent.findAll({
+        attributes: ['id', 'name'],
+        where: {
+          id: { [Op.in]: Array.from(operationContentIds) }
+        },
+        raw: true
+      });
+    }
+    
+    const operationContentMap = new Map();
+    operationContents.forEach(oc => {
+      operationContentMap.set(String(oc.id), oc.name);
+    });
+
+    // 7. 组织用户和操作类型数据
     const usersData = users.map(user => {
-      const userOps = userOperations
-        .filter(uo => uo.user_id === user.id)
-        .map(uo => ({
-          id: uo.operation_content_id,
-          name: uo['operation_content.name']
-        }));
+      const userOpsIds = userOperationMap.get(String(user.id)) || new Set();
+      const operations = Array.from(userOpsIds).map(opId => ({
+        id: parseInt(opId),
+        name: operationContentMap.get(opId) || ''
+      })).sort((a, b) => a.id - b.id);
       
       return {
         id: user.id,
         name: user.name,
-        operations: userOps
+        user_no: user.user_no,
+        phone: user.phone,
+        organization: user.organization ? {
+          id: user.organization.id,
+          name: user.organization.name
+        } : (user.user_input_organization_name ? {
+          id: null,
+          name: user.user_input_organization_name
+        } : null),
+        department: user.department ? {
+          id: user.department.id,
+          name: user.department.name
+        } : (user.user_input_department_name ? {
+          id: null,
+          name: user.user_input_department_name
+        } : null),
+        research_group: user.research_group ? {
+          id: user.research_group.id,
+          name: user.research_group.name
+        } : (user.user_input_research_group_name ? {
+          id: null,
+          name: user.user_input_research_group_name
+        } : null),
+        operations
       };
     });
 
-    // 6. 组织统计数据对象
+    // 8. 组织统计数据对象
     const data = {};
-    statistics.forEach(stat => {
-      const key = `${stat.date}_${stat.user_id}_${stat.operation_content_id}`;
-      data[key] = parseInt(stat.total_quantity);
+    statisticsMap.forEach((quantity, key) => {
+      data[key] = quantity;
     });
 
     return {
