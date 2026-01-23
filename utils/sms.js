@@ -1,7 +1,8 @@
 /**
  * 短信工具
  */
-const Dysmsapi20170525 = require('@alicloud/dysmsapi20170525');
+const Dysmsapi20170525 = require('@alicloud/dysmsapi20170525').default;
+const { SendSmsRequest } = require('@alicloud/dysmsapi20170525');
 const config = require('../config');
 const logger = require('../config/logger');
 const { generateCode } = require('./crypto');
@@ -41,7 +42,7 @@ const sendCode = async (phone, options = {}) => {
     });
     
     // 发送短信请求参数
-    const sendSmsRequest = new Dysmsapi20170525.SendSmsRequest({
+    const sendSmsRequest = new SendSmsRequest({
       phoneNumbers: phone,
       signName: config.sms.signName,
       templateCode: config.sms.templateCode,
