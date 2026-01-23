@@ -95,6 +95,10 @@ module.exports = (sequelize) => {
     completed_time: {
       type: DataTypes.DATE,
       comment: '完成时间'
+    },
+    cancel_time: {
+      type: DataTypes.DATE,
+      comment: '取消时间'
     }
   }, {
     tableName: 'cage_reservations',

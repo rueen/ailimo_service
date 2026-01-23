@@ -301,7 +301,7 @@ const cancelOrder = async (id) => {
       throw new Error('只有待审核或进行中的订单才能取消');
     }
 
-    await order.update({ status: 4 });
+    await order.update({ status: 4, cancel_time: new Date() });
     logger.info(`Animal order cancelled: id=${id}`);
   } catch (error) {
     logger.error(`Cancel animal order failed: id=${id}`, error);

@@ -762,7 +762,7 @@ const cancelReservation = async (id) => {
       throw new Error('只有待审核或进行中的订单才能取消');
     }
 
-    await reservation.update({ status: 4 }, { transaction });
+    await reservation.update({ status: 4, cancel_time: new Date() }, { transaction });
     await transaction.commit();
 
     // 取消订单后，预约的笼位数量自动释放

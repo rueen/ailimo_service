@@ -362,7 +362,7 @@ const cancelOperation = async (id) => {
       throw new Error('只有待审核或进行中的订单才能取消');
     }
 
-    await operation.update({ status: 4 });
+    await operation.update({ status: 4, cancel_time: new Date() });
     logger.info(`Experiment operation cancelled: id=${id}`);
   } catch (error) {
     logger.error(`Cancel experiment operation failed: id=${id}`, error);
