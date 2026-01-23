@@ -102,6 +102,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       comment: '用户ID'
     },
+    need_ear_tag: {
+      type: DataTypes.TINYINT,
+      defaultValue: 0,
+      comment: '是否打耳标：0-不需要 1-需要'
+    },
     status: {
       type: DataTypes.TINYINT,
       defaultValue: 0,
