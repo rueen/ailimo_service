@@ -54,6 +54,8 @@ exports.getWechatJsConfig = async (req, res, next) => {
       stack: error.stack,
       url: req.query.url
     });
-    return response.error(res, '获取微信配置失败', 500);
+    
+    // 返回具体错误信息，帮助排查问题
+    return response.error(res, error.message || '获取微信配置失败', 500);
   }
 };

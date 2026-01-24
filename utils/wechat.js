@@ -42,7 +42,24 @@ async function getAccessToken() {
     const response = await axios.get(url);
 
     if (response.data.errcode) {
-      throw new Error(`获取 access_token 失败: ${response.data.errmsg}`);
+      const errcode = response.data.errcode;
+      const errmsg = response.data.errmsg;
+      
+      // 处理常见错误
+      let errorMessage = `获取 access_token 失败 (${errcode}): ${errmsg}`;
+      
+      if (errcode === 40164) {
+        // IP 白名单错误
+        const ipMatch = errmsg.match(/invalid ip ([0-9.]+)/);
+        const ip = ipMatch ? ipMatch[1] : '未知';
+        errorMessage = `服务器 IP (${ip}) 不在微信公众平台白名单中，请在微信公众平台添加此 IP 到白名单`;
+      } else if (errcode === 40013) {
+        errorMessage = '微信 AppID 不正确，请检查配置';
+      } else if (errcode === 40125) {
+        errorMessage = '微信 AppSecret 不正确，请检查配置';
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const accessToken = response.data.access_token;
@@ -55,7 +72,7 @@ async function getAccessToken() {
     logger.info('获取新的 access_token 成功');
     return accessToken;
   } catch (error) {
-    logger.error('获取 access_token 失败:', error);
+    logger.error('获取 access_token 失败:', error.message);
     throw error;
   }
 }
