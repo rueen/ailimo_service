@@ -9,7 +9,6 @@ const sms = require('./sms');
 const upload = require('./upload');
 const constants = require('./constants');
 const orderSn = require('./orderSn');
-const wechat = require('./wechat');
 
 module.exports = {
   response,
@@ -19,6 +18,5 @@ module.exports = {
   sms,
   upload,
   constants,
-  orderSn,
-  wechat
+  orderSn
 };
