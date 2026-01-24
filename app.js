@@ -14,8 +14,8 @@ const app = express();
 // ==================== 中间件配置 ====================
 
 // 信任代理（用于部署在 Nginx 等反向代理后面）
-// 这样 express-rate-limit 才能正确识别客户端真实 IP
-app.set('trust proxy', true);
+// 设置为 1 表示信任第一个代理（Nginx）
+app.set('trust proxy', 1);
 
 // CORS跨域
 app.use(cors(config.cors));
