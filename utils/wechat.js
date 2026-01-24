@@ -41,13 +41,6 @@ async function getAccessToken() {
     const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appId}&secret=${appSecret}`;
     const response = await axios.get(url);
 
-    logger.info('access_token 响应:', {
-      hasError: !!response.data.errcode,
-      errcode: response.data.errcode,
-      errmsg: response.data.errmsg,
-      hasToken: !!response.data.access_token
-    });
-
     if (response.data.errcode) {
       const errcode = response.data.errcode;
       const errmsg = response.data.errmsg;
@@ -76,10 +69,7 @@ async function getAccessToken() {
     tokenCache.accessToken = accessToken;
     tokenCache.accessTokenExpireTime = now + expiresIn * 1000;
 
-    logger.info('获取新的 access_token 成功', {
-      tokenLength: accessToken.length,
-      expiresIn
-    });
+    logger.info('获取新的 access_token 成功');
     return accessToken;
   } catch (error) {
     logger.error('获取 access_token 失败:', error.message);
@@ -107,20 +97,14 @@ async function getJsapiTicket() {
       throw new Error('access_token 为空');
     }
     
-    logger.info('准备获取 jsapi_ticket', {
-      accessTokenLength: accessToken.length,
-      tokenPrefix: accessToken.substring(0, 10)
-    });
-    
-    // 不要编码 access_token，微信 API 不需要编码
-    const url = `https://api.weixin.qq.com/cgi-bin/ticket/getjsapi_ticket?access_token=${accessToken}`;
+    // URL 编码 access_token，防止特殊字符导致 invalid url 错误
+    const encodedToken = encodeURIComponent(accessToken);
+    const url = `https://api.weixin.qq.com/cgi-bin/ticket/getjsapi_ticket?access_token=${encodedToken}`;
+    logger.info('请求 jsapi_ticket');
     
     const response = await axios.get(url);
 
-    logger.info('jsapi_ticket 响应:', {
-      errcode: response.data.errcode,
-      errmsg: response.data.errmsg
-    });
+    logger.info('jsapi_ticket 响应:', response.data);
 
     if (response.data.errcode !== 0) {
       const errcode = response.data.errcode;
