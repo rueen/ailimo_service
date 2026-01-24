@@ -173,7 +173,7 @@ const register = async (userData) => {
       name, phone, code, 
       organization_id, department_id, research_group_id,
       user_input_organization_name, user_input_department_name, user_input_research_group_name,
-      province_id, city_id, district_id, address 
+      province_id, city_id, district_id, address, audit_status 
     } = userData;
 
     // 查询最新的验证码记录
@@ -263,7 +263,7 @@ const register = async (userData) => {
       district_id,
       address,
       status: 1,
-      audit_status: 0 // 待审核
+      audit_status: audit_status || 1
     }, { transaction });
 
     await transaction.commit();

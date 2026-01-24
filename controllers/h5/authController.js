@@ -71,7 +71,7 @@ const register = async (req, res, next) => {
       name, phone, code, 
       organization_id, department_id, research_group_id,
       user_input_organization_name, user_input_department_name, user_input_research_group_name,
-      province_id, city_id, district_id, address 
+      province_id, city_id, district_id, address, audit_status
     } = req.body;
 
     // 参数验证
@@ -101,7 +101,8 @@ const register = async (req, res, next) => {
       province_id,
       city_id,
       district_id,
-      address
+      address,
+      audit_status: audit_status || 1
     });
 
     return response.success(res, result, result.message);
