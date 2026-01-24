@@ -15,27 +15,17 @@ const logger = require('../../config/logger');
  */
 exports.getWechatJsConfig = async (req, res, next) => {
   try {
-    let { url } = req.query;
+    const { url } = req.query;
 
     // 验证 URL 参数
     if (!url) {
       return response.error(res, '缺少 url 参数', 400);
     }
 
-    // URL 可能被编码，需要解码
-    // 例如: https:%2F%2Fwww.ailimolab.com%2F -> https://www.ailimolab.com/
-    try {
-      url = decodeURIComponent(url);
-    } catch (decodeError) {
-      // 如果解码失败，使用原始 URL
-      logger.warn('URL 解码失败，使用原始 URL:', decodeError.message);
-    }
-
     // 验证 URL 格式
     try {
       new URL(url);
     } catch (error) {
-      logger.error('URL 格式不正确:', { url, error: error.message });
       return response.error(res, 'URL 格式不正确', 400);
     }
 
@@ -49,11 +39,7 @@ exports.getWechatJsConfig = async (req, res, next) => {
 
     return response.success(res, config, '获取配置成功');
   } catch (error) {
-    logger.error('获取微信 JSSDK 配置失败:', {
-      error: error.message,
-      stack: error.stack,
-      url: req.query.url
-    });
+    logger.error('获取微信 JSSDK 配置失败:', error);
     return response.error(res, '获取微信配置失败', 500);
   }
 };
