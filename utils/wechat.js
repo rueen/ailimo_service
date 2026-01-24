@@ -92,37 +92,11 @@ async function getJsapiTicket() {
 
   try {
     const accessToken = await getAccessToken();
-    
-    if (!accessToken) {
-      throw new Error('access_token 为空');
-    }
-    
-    // URL 编码 access_token，防止特殊字符导致 invalid url 错误
-    const encodedToken = encodeURIComponent(accessToken);
-    const url = `https://api.weixin.qq.com/cgi-bin/ticket/getjsapi_ticket?access_token=${encodedToken}`;
-    logger.info('请求 jsapi_ticket');
-    
+    const url = `https://api.weixin.qq.com/cgi-bin/ticket/getjsapi_ticket?access_token=${accessToken}`;
     const response = await axios.get(url);
 
-    logger.info('jsapi_ticket 响应:', response.data);
-
     if (response.data.errcode !== 0) {
-      const errcode = response.data.errcode;
-      const errmsg = response.data.errmsg;
-      
-      // 处理常见错误
-      let errorMessage = `获取 jsapi_ticket 失败 (${errcode}): ${errmsg}`;
-      
-      if (errcode === 40001) {
-        errorMessage = 'access_token 无效或已过期，请检查微信配置';
-        // 清除缓存的 token，下次重新获取
-        tokenCache.accessToken = null;
-        tokenCache.accessTokenExpireTime = 0;
-      } else if (errcode === 40014) {
-        errorMessage = 'access_token 不合法，请检查微信 AppID 和 AppSecret';
-      }
-      
-      throw new Error(errorMessage);
+      throw new Error(`获取 jsapi_ticket 失败: ${response.data.errmsg}`);
     }
 
     const jsapiTicket = response.data.ticket;
@@ -135,7 +109,7 @@ async function getJsapiTicket() {
     logger.info('获取新的 jsapi_ticket 成功');
     return jsapiTicket;
   } catch (error) {
-    logger.error('获取 jsapi_ticket 失败:', error.message);
+    logger.error('获取 jsapi_ticket 失败:', error);
     throw error;
   }
 }
