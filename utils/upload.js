@@ -43,7 +43,11 @@ const uploadToOSS = async (localPath, ossPath) => {
   try {
     const result = await client.put(ossPath, localPath);
     logger.info(`文件上传到OSS成功: ${ossPath}`);
-    return result.url;
+    
+    // 将 HTTP 地址转换为 HTTPS
+    // ali-oss 的 put 方法默认返回 HTTP 地址，需要手动转换
+    const httpsUrl = result.url.replace(/^http:/, 'https:');
+    return httpsUrl;
   } catch (err) {
     logger.error(`文件上传到OSS失败: ${err.message}`);
     throw new Error('文件上传失败');
