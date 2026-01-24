@@ -9,6 +9,7 @@ const { h5Auth, smsLimiter, uploadSingle } = require('../middlewares');
 // 控制器
 const authController = require('../controllers/h5/authController');
 const orderController = require('../controllers/h5/orderController');
+const wechatController = require('../controllers/h5/wechatController');
 const regionController = require('../controllers/common/regionController');
 
 // ==================== 认证相关 ====================
@@ -84,5 +85,8 @@ router.get('/company-info', orderController.getCompanyInfo);
 const otherServiceController = require('../controllers/h5/otherServiceController');
 router.get('/other-services', otherServiceController.getOtherServiceList);
 router.get('/other-services/:id', otherServiceController.getOtherServiceDetail);
+
+// ==================== 微信相关 ====================
+router.get('/wechat-js-config', wechatController.getWechatJsConfig);
 
 module.exports = router;
