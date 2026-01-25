@@ -333,29 +333,6 @@ const getAnimalRequirementList = async (req, res, next) => {
   }
 };
 
-/**
- * 获取试剂品牌列表
- */
-const getReagentBrandList = async (req, res, next) => {
-  try {
-    const list = await orderService.getReagentBrandList();
-    return response.success(res, list);
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * 获取试剂规格列表
- */
-const getReagentSpecificationList = async (req, res, next) => {
-  try {
-    const list = await orderService.getReagentSpecificationList();
-    return response.success(res, list);
-  } catch (err) {
-    next(err);
-  }
-};
 
 /**
  * 获取组织机构列表
@@ -476,8 +453,6 @@ module.exports = {
   getAnimalVarietyList,
   getAnimalSpecificationList,
   getAnimalRequirementList,
-  getReagentBrandList,
-  getReagentSpecificationList,
   getOrganizationList,
   getDepartmentList,
   getResearchGroupList,

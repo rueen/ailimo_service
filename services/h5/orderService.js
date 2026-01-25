@@ -537,7 +537,6 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
       case 'reagent':
         model = db.ReagentOrder;
         include = [
-          { model: db.ReagentBrand, as: 'brand', attributes: ['id', 'name'] },
           { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
         ];
       typeConfig = { dateField: 'delivery_date', titleField: 'name' };
@@ -746,8 +745,6 @@ const getOrderDetail = async (userId, type, orderId) => {
       case 'reagent':
         model = db.ReagentOrder;
         include = [
-          { model: db.ReagentBrand, as: 'brand' },
-          { model: db.ReagentSpecification, as: 'specification' },
           { model: db.Handler, as: 'handler' },
           { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
           { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
@@ -1332,36 +1329,6 @@ const getAnimalRequirementList = async () => {
 };
 
 /**
- * 获取试剂品牌列表
- * @returns {Promise<Array>}
- */
-const getReagentBrandList = async () => {
-  try {
-    return await db.ReagentBrand.findAll({
-      order: [['name', 'ASC']]
-    });
-  } catch (error) {
-    logger.error('Get reagent brand list failed:', error);
-    throw error;
-  }
-};
-
-/**
- * 获取试剂规格列表
- * @returns {Promise<Array>}
- */
-const getReagentSpecificationList = async () => {
-  try {
-    return await db.ReagentSpecification.findAll({
-      order: [['name', 'ASC']]
-    });
-  } catch (error) {
-    logger.error('Get reagent specification list failed:', error);
-    throw error;
-  }
-};
-
-/**
  * 获取组织机构列表
  * @returns {Promise<Array>}
  */
@@ -1445,8 +1412,6 @@ module.exports = {
   getAnimalVarietyList,
   getAnimalSpecificationList,
   getAnimalRequirementList,
-  getReagentBrandList,
-  getReagentSpecificationList,
   getOrganizationList,
   getDepartmentList,
   getResearchGroupList,

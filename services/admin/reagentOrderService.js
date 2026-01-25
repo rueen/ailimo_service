@@ -19,7 +19,8 @@ const getOrderList = async (params) => {
       pageSize = 10, 
       user_id, 
       status,
-      brand_id,
+      brand_name,
+      specification_name,
       start_date,
       end_date,
       keyword,
@@ -29,7 +30,8 @@ const getOrderList = async (params) => {
     const where = {};
     if (user_id) where.user_id = user_id;
     if (status !== undefined) where.status = status;
-    if (brand_id) where.brand_id = brand_id;
+    if (brand_name) where.brand_name = { [Op.like]: `%${brand_name}%` };
+    if (specification_name) where.specification_name = { [Op.like]: `%${specification_name}%` };
     if (keyword) {
       where.name = { [Op.like]: `%${keyword}%` };
     }
@@ -47,16 +49,6 @@ const getOrderList = async (params) => {
     const { count, rows } = await db.ReagentOrder.findAndCountAll({
       where,
       include: [
-        { 
-          model: db.ReagentBrand, 
-          as: 'brand', 
-          attributes: ['id', 'name'] 
-        },
-        { 
-          model: db.ReagentSpecification, 
-          as: 'specification', 
-          attributes: ['id', 'name'] 
-        },
         { 
           model: db.User, 
           as: 'user', 
@@ -99,11 +91,12 @@ const getOrderDetail = async (id) => {
   try {
     const order = await db.ReagentOrder.findByPk(id, {
       include: [
-        { model: db.ReagentBrand, as: 'brand' },
-        { model: db.ReagentSpecification, as: 'specification' },
         { model: db.User, as: 'user' },
         { model: db.Handler, as: 'handler' },
-        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] },
+        { model: db.Region, as: 'province' },
+        { model: db.Region, as: 'city' },
+        { model: db.Region, as: 'district' }
       ]
     });
 
@@ -286,267 +279,6 @@ const cancelOrder = async (id) => {
   }
 };
 
-// ==================== 品牌管理 ====================
-
-/**
- * 获取品牌列表
- * @param {Object} params - 查询参数
- * @returns {Promise<Object>}
- */
-const getBrandList = async (params) => {
-  try {
-    const { page = 1, pageSize = 10, name } = params;
-    
-    const where = {};
-    if (name) where.name = { [Op.like]: `%${name}%` };
-
-    const offset = (page - 1) * pageSize;
-    
-    const { count, rows } = await db.ReagentBrand.findAndCountAll({
-      where,
-      offset,
-      limit: parseInt(pageSize),
-      order: [['created_at', 'DESC']]
-    });
-
-    return {
-      list: rows,
-      total: count,
-      page: parseInt(page),
-      pageSize: parseInt(pageSize),
-      totalPages: Math.ceil(count / pageSize)
-    };
-  } catch (error) {
-    logger.error('Get reagent brand list failed:', error);
-    throw error;
-  }
-};
-
-/**
- * 创建品牌
- * @param {String} name - 品牌名称
- * @returns {Promise<Object>}
- */
-const createBrand = async (name) => {
-  try {
-    const existing = await db.ReagentBrand.findOne({ where: { name } });
-    if (existing) {
-      throw new Error('该品牌已存在');
-    }
-
-    const brand = await db.ReagentBrand.create({ name });
-    logger.info(`Reagent brand created: id=${brand.id}, name=${name}`);
-    return brand;
-  } catch (error) {
-    logger.error('Create reagent brand failed:', error);
-    throw error;
-  }
-};
-
-/**
- * 更新品牌
- * @param {Number} id - 品牌ID
- * @param {String} name - 品牌名称
- * @returns {Promise<void>}
- */
-const updateBrand = async (id, name) => {
-  try {
-    const brand = await db.ReagentBrand.findByPk(id);
-    if (!brand) {
-      throw new Error('品牌不存在');
-    }
-
-    const existing = await db.ReagentBrand.findOne({ 
-      where: { 
-        name,
-        id: { [Op.ne]: id }
-      } 
-    });
-    if (existing) {
-      throw new Error('该品牌名称已存在');
-    }
-
-    await brand.update({ name });
-    logger.info(`Reagent brand updated: id=${id}`);
-  } catch (error) {
-    logger.error(`Update reagent brand failed: id=${id}`, error);
-    throw error;
-  }
-};
-
-/**
- * 删除品牌
- * @param {Number} id - 品牌ID
- * @returns {Promise<void>}
- */
-const deleteBrand = async (id) => {
-  try {
-    const brand = await db.ReagentBrand.findByPk(id);
-    if (!brand) {
-      throw new Error('品牌不存在');
-    }
-
-    const orderCount = await db.ReagentOrder.count({ where: { brand_id: id } });
-    if (orderCount > 0) {
-      throw new Error('该品牌存在关联订单，无法删除');
-    }
-
-    await brand.destroy();
-    logger.info(`Reagent brand deleted: id=${id}`);
-  } catch (error) {
-    logger.error(`Delete reagent brand failed: id=${id}`, error);
-    throw error;
-  }
-};
-
-// ==================== 规格管理 ====================
-
-/**
- * 获取规格列表
- * @param {Object} params - 查询参数
- * @returns {Promise<Object>}
- */
-const getSpecificationList = async (params) => {
-  try {
-    const { page = 1, pageSize = 10, name } = params;
-    
-    const where = {};
-    if (name) where.name = { [Op.like]: `%${name}%` };
-
-    const offset = (page - 1) * pageSize;
-    
-    const { count, rows } = await db.ReagentSpecification.findAndCountAll({
-      where,
-      offset,
-      limit: parseInt(pageSize),
-      order: [['created_at', 'DESC']]
-    });
-
-    return {
-      list: rows,
-      total: count,
-      page: parseInt(page),
-      pageSize: parseInt(pageSize),
-      totalPages: Math.ceil(count / pageSize)
-    };
-  } catch (error) {
-    logger.error('Get reagent specification list failed:', error);
-    throw error;
-  }
-};
-
-/**
- * 创建规格
- * @param {String} name - 规格名称
- * @returns {Promise<Object>}
- */
-const createSpecification = async (name) => {
-  try {
-    const existing = await db.ReagentSpecification.findOne({ where: { name } });
-    if (existing) {
-      throw new Error('该规格已存在');
-    }
-
-    const spec = await db.ReagentSpecification.create({ name });
-    logger.info(`Reagent specification created: id=${spec.id}`);
-    return spec;
-  } catch (error) {
-    logger.error('Create reagent specification failed:', error);
-    throw error;
-  }
-};
-
-/**
- * 更新规格
- * @param {Number} id - 规格ID
- * @param {String} name - 规格名称
- * @returns {Promise<void>}
- */
-const updateSpecification = async (id, name) => {
-  try {
-    const spec = await db.ReagentSpecification.findByPk(id);
-    if (!spec) {
-      throw new Error('规格不存在');
-    }
-
-    const existing = await db.ReagentSpecification.findOne({ 
-      where: { 
-        name,
-        id: { [Op.ne]: id }
-      } 
-    });
-    if (existing) {
-      throw new Error('该规格名称已存在');
-    }
-
-    await spec.update({ name });
-    logger.info(`Reagent specification updated: id=${id}`);
-  } catch (error) {
-    logger.error(`Update reagent specification failed: id=${id}`, error);
-    throw error;
-  }
-};
-
-/**
- * 删除规格
- * @param {Number} id - 规格ID
- * @returns {Promise<void>}
- */
-const deleteSpecification = async (id) => {
-  try {
-    const spec = await db.ReagentSpecification.findByPk(id);
-    if (!spec) {
-      throw new Error('规格不存在');
-    }
-
-    const orderCount = await db.ReagentOrder.count({ where: { specification_id: id } });
-    if (orderCount > 0) {
-      throw new Error('该规格存在关联订单，无法删除');
-    }
-
-    await spec.destroy();
-    logger.info(`Reagent specification deleted: id=${id}`);
-  } catch (error) {
-    logger.error(`Delete reagent specification failed: id=${id}`, error);
-    throw error;
-  }
-};
-
-// ==================== Options 函数 ====================
-
-/**
- * 获取试剂品牌选项列表（用于下拉选择）
- * @returns {Promise<Array>}
- */
-const getBrandOptions = async () => {
-  try {
-    const brands = await db.ReagentBrand.findAll({
-      attributes: ['id', 'name'],
-      order: [['name', 'ASC']]
-    });
-    return brands;
-  } catch (error) {
-    logger.error('Get reagent brand options failed:', error);
-    throw error;
-  }
-};
-
-/**
- * 获取试剂规格选项列表（用于下拉选择）
- * @returns {Promise<Array>}
- */
-const getSpecificationOptions = async () => {
-  try {
-    const specs = await db.ReagentSpecification.findAll({
-      attributes: ['id', 'name'],
-      order: [['name', 'ASC']]
-    });
-    return specs;
-  } catch (error) {
-    logger.error('Get reagent specification options failed:', error);
-    throw error;
-  }
-};
 
 module.exports = {
   // 订单管理
@@ -556,19 +288,5 @@ module.exports = {
   updateOrder,
   auditOrder,
   completeOrder,
-  cancelOrder,
-  
-  // 品牌管理
-  getBrandList,
-  getBrandOptions,
-  createBrand,
-  updateBrand,
-  deleteBrand,
-  
-  // 规格管理
-  getSpecificationList,
-  getSpecificationOptions,
-  createSpecification,
-  updateSpecification,
-  deleteSpecification
+  cancelOrder
 };

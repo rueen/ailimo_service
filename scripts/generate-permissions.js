@@ -33,7 +33,6 @@ const PERMISSION_CONFIG = {
       { name: '新增用户', code: 'user:create' },
       { name: '编辑用户', code: 'user:update' },
       { name: '删除用户', code: 'user:delete' },
-      { name: '审核用户', code: 'user:audit' },
       // 组织机构
       { 
         name: '组织机构',
@@ -240,28 +239,6 @@ const PERMISSION_CONFIG = {
       { name: '审核订单', code: 'reagent_order:audit' },
       { name: '完成订单', code: 'reagent_order:complete' },
       { name: '取消订单', code: 'reagent_order:cancel' },
-      // 试剂品牌管理
-      {
-        name: '品牌管理',
-        code: 'reagent_brand',
-        children: [
-          { name: '品牌列表', code: 'reagent_brand:list' },
-          { name: '新增品牌', code: 'reagent_brand:create' },
-          { name: '编辑品牌', code: 'reagent_brand:update' },
-          { name: '删除品牌', code: 'reagent_brand:delete' },
-        ]
-      },
-      // 试剂规格管理
-      {
-        name: '规格管理',
-        code: 'reagent_specification',
-        children: [
-          { name: '规格列表', code: 'reagent_specification:list' },
-          { name: '新增规格', code: 'reagent_specification:create' },
-          { name: '编辑规格', code: 'reagent_specification:update' },
-          { name: '删除规格', code: 'reagent_specification:delete' },
-        ]
-      },
     ]
   },
   // - 内容管理

@@ -201,20 +201,6 @@ router.put('/reagent-orders/:id/audit', adminAuth, permission('reagent_order:aud
 router.put('/reagent-orders/:id/complete', adminAuth, permission('reagent_order:complete'), reagentOrderController.completeOrder);
 router.put('/reagent-orders/:id/cancel', adminAuth, permission('reagent_order:cancel'), reagentOrderController.cancelOrder);
 
-// 试剂品牌
-router.get('/reagent-brands', adminAuth, reagentOrderController.getBrandList);
-router.get('/reagent-brands/options', adminAuth, reagentOrderController.getBrandOptions);
-router.post('/reagent-brands', adminAuth, permission('reagent_brand:create'), reagentOrderController.createBrand);
-router.put('/reagent-brands/:id', adminAuth, permission('reagent_brand:update'), reagentOrderController.updateBrand);
-router.delete('/reagent-brands/:id', adminAuth, permission('reagent_brand:delete'), reagentOrderController.deleteBrand);
-
-// 试剂规格
-router.get('/reagent-specifications', adminAuth, reagentOrderController.getSpecificationList);
-router.get('/reagent-specifications/options', adminAuth, reagentOrderController.getSpecificationOptions);
-router.post('/reagent-specifications', adminAuth, permission('reagent_specification:create'), reagentOrderController.createSpecification);
-router.put('/reagent-specifications/:id', adminAuth, permission('reagent_specification:update'), reagentOrderController.updateSpecification);
-router.delete('/reagent-specifications/:id', adminAuth, permission('reagent_specification:delete'), reagentOrderController.deleteSpecification);
-
 // ==================== 内容管理 ====================
 // 案例管理
 router.get('/cases', adminAuth, permission('case:list'), contentController.getCaseList);

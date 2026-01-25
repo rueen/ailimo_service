@@ -65,8 +65,6 @@ db.AnimalRequirement = require('./AnimalRequirement')(sequelize);
 db.AnimalOrder = require('./AnimalOrder')(sequelize);
 
 // 试剂耗材模型
-db.ReagentBrand = require('./ReagentBrand')(sequelize);
-db.ReagentSpecification = require('./ReagentSpecification')(sequelize);
 db.ReagentOrder = require('./ReagentOrder')(sequelize);
 
 // 其他模型
@@ -149,8 +147,6 @@ db.AnimalOrder.belongsTo(db.Region, { foreignKey: 'city_id', as: 'city' });
 db.AnimalOrder.belongsTo(db.Region, { foreignKey: 'district_id', as: 'district' });
 
 // 试剂耗材关联
-db.ReagentOrder.belongsTo(db.ReagentBrand, { foreignKey: 'brand_id', as: 'brand' });
-db.ReagentOrder.belongsTo(db.ReagentSpecification, { foreignKey: 'specification_id', as: 'specification' });
 db.ReagentOrder.belongsTo(db.User, { foreignKey: 'user_id', as: 'user' });
 db.ReagentOrder.belongsTo(db.Handler, { foreignKey: 'handler_id', as: 'handler' });
 db.ReagentOrder.belongsTo(db.Administrator, { foreignKey: 'audit_by', as: 'auditBy' });

@@ -32,15 +32,15 @@ module.exports = (sequelize) => {
       allowNull: false,
       comment: '试剂耗材名称'
     },
-    brand_id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+    brand_name: {
+      type: DataTypes.STRING(200),
       allowNull: false,
-      comment: '品牌ID'
+      comment: '品牌名称'
     },
-    specification_id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+    specification_name: {
+      type: DataTypes.STRING(200),
       allowNull: false,
-      comment: '规格ID'
+      comment: '规格名称'
     },
     quantity: {
       type: DataTypes.INTEGER,
@@ -127,7 +127,6 @@ module.exports = (sequelize) => {
     updatedAt: 'updated_at',
     indexes: [
       { fields: ['order_sn'], unique: true },
-      { fields: ['brand_id'] },
       { fields: ['user_id'] },
       { fields: ['status'] },
       { fields: ['delivery_date'] },

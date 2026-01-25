@@ -63,8 +63,6 @@ router.get('/animal-brands', orderController.getAnimalBrandList);
 router.get('/animal-varieties', orderController.getAnimalVarietyList);
 router.get('/animal-specifications', orderController.getAnimalSpecificationList);
 router.get('/animal-requirements', orderController.getAnimalRequirementList);
-router.get('/reagent-brands', orderController.getReagentBrandList);
-router.get('/reagent-specifications', orderController.getReagentSpecificationList);
 router.get('/organizations', orderController.getOrganizationList);
 router.get('/departments', orderController.getDepartmentList);
 router.get('/research-groups', orderController.getResearchGroupList);
