@@ -587,10 +587,31 @@ const deleteEnvironmentType = async (id) => {
       throw new Error('该环境类型存在关联笼位，无法删除');
     }
 
+    // 检查是否有关联的动物订单
+    const animalOrderCount = await db.AnimalOrder.count({ where: { environment_id: id } });
+    if (animalOrderCount > 0) {
+      throw new Error('该环境类型存在关联的动物订单，无法删除');
+    }
+
     await type.destroy();
     logger.info(`Environment type deleted: id=${id}`);
   } catch (error) {
     logger.error(`Delete environment type failed: id=${id}`, error);
+    
+    // 优化数据库外键约束错误提示
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      // 根据约束名称判断是哪个表的外键约束
+      if (error.original && error.original.message) {
+        const message = error.original.message;
+        if (message.includes('animal_orders')) {
+          throw new Error('该环境类型存在关联的动物订单，无法删除');
+        } else if (message.includes('cages')) {
+          throw new Error('该环境类型存在关联笼位，无法删除');
+        }
+      }
+      throw new Error('该环境类型存在关联数据，无法删除');
+    }
+    
     throw error;
   }
 };
