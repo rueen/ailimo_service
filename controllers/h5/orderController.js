@@ -301,8 +301,8 @@ const getAnimalBrandList = async (req, res, next) => {
  */
 const getAnimalVarietyList = async (req, res, next) => {
   try {
-    const { brandId } = req.query;
-    const list = await orderService.getAnimalVarietyList(brandId);
+    const { brand_id } = req.query;
+    const list = await orderService.getAnimalVarietyList(brand_id);
     return response.success(res, list);
   } catch (err) {
     next(err);
