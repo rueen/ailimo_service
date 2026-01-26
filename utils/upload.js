@@ -112,6 +112,76 @@ const uploadImage = async (file, directory = '') => {
   };
 };
 
+/**
+ * 上传文档
+ * @param {Object} file - Multer文件对象
+ * @param {String} directory - 自定义上传目录（如 'contracts', 'reports' 等）
+ * @returns {Promise<Object>} 上传结果
+ */
+const uploadDocument = async (file, directory = '') => {
+  if (!file) {
+    throw new Error('未选择文件');
+  }
+  
+  // 支持的文档类型
+  const allowedDocumentTypes = [
+    'application/msword', // .doc
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    'application/vnd.ms-excel', // .xls
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    'application/vnd.ms-powerpoint', // .ppt
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+    'application/pdf', // .pdf
+    'text/plain' // .txt
+  ];
+  
+  // 验证文件类型
+  if (!allowedDocumentTypes.includes(file.mimetype)) {
+    throw new Error('不支持的文件类型，仅支持 doc, docx, txt, pdf, xls, xlsx, ppt, pptx 格式');
+  }
+  
+  // 验证文件大小（20MB）
+  const maxDocumentSize = 20 * 1024 * 1024;
+  if (file.size > maxDocumentSize) {
+    throw new Error('文件大小不能超过 20MB');
+  }
+  
+  // 强制使用 OSS
+  if (!config.oss.enabled) {
+    throw new Error('OSS未配置，请联系管理员');
+  }
+  
+  // 构建 OSS 路径
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const filename = config.upload.filename(file.originalname);
+  
+  // 路径格式: documents/{directory}/{year}/{month}/{day}/{filename}
+  let ossPath = 'documents/';
+  if (directory) {
+    ossPath += `${directory}/`;
+  }
+  ossPath += `${year}/${month}/${day}/${filename}`;
+  
+  const url = await uploadToOSS(file.path, ossPath);
+  
+  // 删除临时文件
+  try {
+    await fs.unlink(file.path);
+  } catch (err) {
+    logger.warn(`删除临时文件失败: ${file.path}`);
+  }
+  
+  return {
+    url,
+    filename,
+    originalName: file.originalname,
+    size: file.size,
+    mime_type: file.mimetype
+  };
+};
 
 /**
  * 删除OSS文件
@@ -135,5 +205,6 @@ const deleteOSSFile = async (ossPath) => {
 module.exports = {
   uploadToOSS,
   uploadImage,
+  uploadDocument,
   deleteOSSFile
 };

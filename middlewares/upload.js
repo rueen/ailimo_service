@@ -25,8 +25,8 @@ const storage = multer.diskStorage({
   }
 });
 
-// 文件过滤器
-const fileFilter = (req, file, cb) => {
+// 文件过滤器 - 图片
+const imageFileFilter = (req, file, cb) => {
   const allowedTypes = config.upload.allowedImageTypes;
   
   if (allowedTypes.includes(file.mimetype)) {
@@ -36,21 +36,50 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// 创建上传实例
-const upload = multer({
+// 文件过滤器 - 文档
+const documentFileFilter = (req, file, cb) => {
+  const allowedDocumentTypes = [
+    'application/msword', // .doc
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    'application/vnd.ms-excel', // .xls
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    'application/vnd.ms-powerpoint', // .ppt
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+    'application/pdf', // .pdf
+    'text/plain' // .txt
+  ];
+  
+  if (allowedDocumentTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('不支持的文件类型，仅支持 doc, docx, txt, pdf, xls, xlsx, ppt, pptx 格式'), false);
+  }
+};
+
+// 创建图片上传实例
+const imageUpload = multer({
   storage,
   limits: {
     fileSize: config.upload.maxSize
   },
-  fileFilter
+  fileFilter: imageFileFilter
+});
+
+// 创建文档上传实例
+const documentUpload = multer({
+  storage,
+  limits: {
+    fileSize: 20 * 1024 * 1024 // 20MB
+  },
+  fileFilter: documentFileFilter
 });
 
 /**
- * 单文件上传中间件
+ * 单文件上传中间件 - 图片
  */
 const uploadSingle = (fieldName = 'file') => {
   return (req, res, next) => {
-    const uploadHandler = upload.single(fieldName);
+    const uploadHandler = imageUpload.single(fieldName);
     
     uploadHandler(req, res, (err) => {
       if (err) {
@@ -68,11 +97,33 @@ const uploadSingle = (fieldName = 'file') => {
 };
 
 /**
- * 多文件上传中间件
+ * 单文件上传中间件 - 文档
+ */
+const uploadDocumentSingle = (fieldName = 'file') => {
+  return (req, res, next) => {
+    const uploadHandler = documentUpload.single(fieldName);
+    
+    uploadHandler(req, res, (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return response.badRequest(res, '文件大小不能超过 20MB');
+          }
+          return response.badRequest(res, '文件上传失败');
+        }
+        return response.badRequest(res, err.message);
+      }
+      next();
+    });
+  };
+};
+
+/**
+ * 多文件上传中间件 - 图片
  */
 const uploadMultiple = (fieldName = 'files', maxCount = 10) => {
   return (req, res, next) => {
-    const uploadHandler = upload.array(fieldName, maxCount);
+    const uploadHandler = imageUpload.array(fieldName, maxCount);
     
     uploadHandler(req, res, (err) => {
       if (err) {
@@ -94,5 +145,6 @@ const uploadMultiple = (fieldName = 'files', maxCount = 10) => {
 
 module.exports = {
   uploadSingle,
+  uploadDocumentSingle,
   uploadMultiple
 };

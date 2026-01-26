@@ -8,7 +8,7 @@ const h5Auth = require('./h5Auth');
 const permission = require('./permission');
 const { apiLimiter, loginLimiter, smsLimiter } = require('./rateLimit');
 const validate = require('./validate');
-const { uploadSingle, uploadMultiple } = require('./upload');
+const { uploadSingle, uploadDocumentSingle, uploadMultiple } = require('./upload');
 
 module.exports = {
   // 错误处理
@@ -33,5 +33,6 @@ module.exports = {
   
   // 文件上传
   uploadSingle,
+  uploadDocumentSingle,
   uploadMultiple
 };

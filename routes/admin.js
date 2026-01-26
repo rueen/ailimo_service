@@ -4,7 +4,7 @@
  */
 const express = require('express');
 const router = express.Router();
-const { adminAuth, permission, loginLimiter, uploadSingle } = require('../middlewares');
+const { adminAuth, permission, loginLimiter, uploadSingle, uploadDocumentSingle } = require('../middlewares');
 
 // 控制器
 const authController = require('../controllers/admin/authController');
@@ -258,11 +258,24 @@ router.get('/regions/tree', adminAuth, regionController.getRegionTree);
 router.get('/regions/:id', adminAuth, regionController.getRegionById);
 
 // ==================== 文件上传 ====================
+// 上传图片
 router.post('/upload/image', adminAuth, uploadSingle('file'), async (req, res, next) => {
   try {
     const { upload } = require('../utils');
     const { directory } = req.body; // 可选的目录参数，如 'equipment', 'cage' 等
     const result = await upload.uploadImage(req.file, directory);
+    return res.json({ code: 200, message: '上传成功', data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 上传文档
+router.post('/upload/document', adminAuth, uploadDocumentSingle('file'), async (req, res, next) => {
+  try {
+    const { upload } = require('../utils');
+    const { directory } = req.body; // 可选的目录参数，如 'contracts', 'reports' 等
+    const result = await upload.uploadDocument(req.file, directory);
     return res.json({ code: 200, message: '上传成功', data: result });
   } catch (err) {
     next(err);
