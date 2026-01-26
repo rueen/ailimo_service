@@ -259,7 +259,7 @@ const auditOrder = async (id, status, rejectReason, handlerId, adminId) => {
       const { sendOrderNotification } = require('../../utils/sms');
       const templateCode = status === 1 ? 'SMS_501095396' : 'SMS_500970389'; // 审核通过/未通过
       await sendOrderNotification(order.user.phone, templateCode, {
-        order_type_name: '动物订购订单'
+        order_type_name: '动物订购'
       });
     }
   } catch (error) {
@@ -297,7 +297,7 @@ const completeOrder = async (id) => {
     if (order.user && order.user.phone) {
       const { sendOrderNotification } = require('../../utils/sms');
       await sendOrderNotification(order.user.phone, 'SMS_501015384', {
-        order_type_name: '动物订购订单'
+        order_type_name: '动物订购'
       });
     }
   } catch (error) {
@@ -331,7 +331,7 @@ const cancelOrder = async (id) => {
     if (order.user && order.user.phone) {
       const { sendOrderNotification } = require('../../utils/sms');
       await sendOrderNotification(order.user.phone, 'SMS_500995405', {
-        order_type_name: '动物订购订单'
+        order_type_name: '动物订购'
       });
     }
   } catch (error) {

@@ -505,7 +505,7 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
       const { sendOrderNotification } = require('../../utils/sms');
       const templateCode = status === 1 ? 'SMS_501095396' : 'SMS_500970389'; // 审核通过/未通过
       await sendOrderNotification(reservation.user.phone, templateCode, {
-        order_type_name: '设备预约订单'
+        order_type_name: '设备预约'
       });
     }
   } catch (err) {
@@ -545,7 +545,7 @@ const completeReservation = async (id) => {
     if (reservation.user && reservation.user.phone) {
       const { sendOrderNotification } = require('../../utils/sms');
       await sendOrderNotification(reservation.user.phone, 'SMS_501015384', {
-        order_type_name: '设备预约订单'
+        order_type_name: '设备预约'
       });
     }
   } catch (err) {
@@ -581,7 +581,7 @@ const cancelReservation = async (id) => {
     if (reservation.user && reservation.user.phone) {
       const { sendOrderNotification } = require('../../utils/sms');
       await sendOrderNotification(reservation.user.phone, 'SMS_500995405', {
-        order_type_name: '设备预约订单'
+        order_type_name: '设备预约'
       });
     }
   } catch (err) {

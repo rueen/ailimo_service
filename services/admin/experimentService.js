@@ -320,7 +320,7 @@ const auditOperation = async (id, status, rejectReason, handlerId, adminId) => {
       const { sendOrderNotification } = require('../../utils/sms');
       const templateCode = status === 1 ? 'SMS_501095396' : 'SMS_500970389'; // 审核通过/未通过
       await sendOrderNotification(operation.user.phone, templateCode, {
-        order_type_name: '实验代操作订单'
+        order_type_name: '实验代操作'
       });
     }
   } catch (error) {
@@ -358,7 +358,7 @@ const completeOperation = async (id) => {
     if (operation.user && operation.user.phone) {
       const { sendOrderNotification } = require('../../utils/sms');
       await sendOrderNotification(operation.user.phone, 'SMS_501015384', {
-        order_type_name: '实验代操作订单'
+        order_type_name: '实验代操作'
       });
     }
   } catch (error) {
@@ -392,7 +392,7 @@ const cancelOperation = async (id) => {
     if (operation.user && operation.user.phone) {
       const { sendOrderNotification } = require('../../utils/sms');
       await sendOrderNotification(operation.user.phone, 'SMS_500995405', {
-        order_type_name: '实验代操作订单'
+        order_type_name: '实验代操作'
       });
     }
   } catch (error) {
