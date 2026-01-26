@@ -184,8 +184,56 @@ const sendOrderNotification = async (phone, templateCode, templateParams) => {
   }
 };
 
+/**
+ * 发送新订单通知给管理员
+ * @param {String} configKey - 配置键（如 sms_animal_order）
+ * @param {String} orderTypeName - 订单类型名称
+ * @returns {Promise<void>}
+ */
+const sendNewOrderNotification = async (configKey, orderTypeName) => {
+  try {
+    const db = require('../models');
+    
+    // 从系统配置中获取通知手机号列表
+    const configRecord = await db.SystemConfig.findOne({
+      where: { config_key: configKey }
+    });
+    
+    if (!configRecord || !configRecord.config_value) {
+      logger.info(`新订单通知：未配置管理员手机号 (${configKey})`);
+      return;
+    }
+    
+    // 解析手机号列表（逗号分隔）
+    const phoneNumbers = configRecord.config_value
+      .split(',')
+      .map(phone => phone.trim())
+      .filter(phone => phone.length > 0);
+    
+    if (phoneNumbers.length === 0) {
+      logger.info(`新订单通知：手机号列表为空 (${configKey})`);
+      return;
+    }
+    
+    // 向每个管理员手机号发送通知
+    const templateCode = 'SMS_501005389'; // 新订单通知模板
+    const templateParams = { order_type_name: orderTypeName };
+    
+    const sendPromises = phoneNumbers.map(phone => 
+      sendOrderNotification(phone, templateCode, templateParams)
+    );
+    
+    await Promise.all(sendPromises);
+    logger.info(`新订单通知已发送 - 订单类型: ${orderTypeName}, 通知人数: ${phoneNumbers.length}`);
+  } catch (error) {
+    logger.error(`发送新订单通知失败 - 配置键: ${configKey}, 错误: ${error.message}`);
+    // 不抛出异常，避免影响订单创建流程
+  }
+};
+
 module.exports = {
   sendCode,
   verifyCode,
-  sendOrderNotification
+  sendOrderNotification,
+  sendNewOrderNotification
 };

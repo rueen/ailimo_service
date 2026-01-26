@@ -109,6 +109,10 @@ const createEquipmentReservation = async (userId, data) => {
     await transaction.commit();
     logger.info(`Equipment reservation created by user: userId=${userId}, reservationId=${reservation.id}, sn=${orderSn}`);
     
+    // 发送新订单通知给管理员
+    const { sendNewOrderNotification } = require('../../utils/sms');
+    await sendNewOrderNotification('sms_equipment_order', '设备预约');
+    
     return reservation;
   } catch (error) {
     await transaction.rollback();
@@ -213,6 +217,10 @@ const createCageReservation = async (userId, data) => {
 
     await transaction.commit();
     logger.info(`Cage reservation created by user: userId=${userId}, reservationId=${reservation.id}, cage_id=${cage.id}, sn=${orderSn}`);
+    
+    // 发送新订单通知给管理员
+    const { sendNewOrderNotification } = require('../../utils/sms');
+    await sendNewOrderNotification('sms_cage_order', '笼位预约');
     
     return reservation;
   } catch (error) {
@@ -339,6 +347,11 @@ const createExperimentOperation = async (userId, data) => {
 
     await transaction.commit();
     logger.info(`Experiment operation created by user: userId=${userId}, operationId=${operation.id}, sn=${orderSn}`);
+    
+    // 发送新订单通知给管理员
+    const { sendNewOrderNotification } = require('../../utils/sms');
+    await sendNewOrderNotification('sms_experiment_order', '实验代操作');
+    
     return operation;
   } catch (error) {
     await transaction.rollback();
@@ -381,6 +394,11 @@ const createAnimalOrder = async (userId, data) => {
 
     await transaction.commit();
     logger.info(`Animal order created by user: userId=${userId}, orderId=${order.id}, sn=${orderSn}`);
+    
+    // 发送新订单通知给管理员
+    const { sendNewOrderNotification } = require('../../utils/sms');
+    await sendNewOrderNotification('sms_animal_order', '动物订购');
+    
     return order;
   } catch (error) {
     await transaction.rollback();
@@ -423,6 +441,11 @@ const createReagentOrder = async (userId, data) => {
 
     await transaction.commit();
     logger.info(`Reagent order created by user: userId=${userId}, orderId=${order.id}, sn=${orderSn}`);
+    
+    // 发送新订单通知给管理员
+    const { sendNewOrderNotification } = require('../../utils/sms');
+    await sendNewOrderNotification('sms_reagent_order', '试剂耗材订购');
+    
     return order;
   } catch (error) {
     await transaction.rollback();
