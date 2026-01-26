@@ -639,6 +639,7 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
   
   try {
     const reservation = await db.CageReservation.findByPk(id, { 
+      include: [{ model: db.User, as: 'user' }],
       transaction,
       lock: transaction.LOCK.UPDATE
     });
@@ -706,6 +707,15 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
     await transaction.commit();
     
     logger.info(`Cage reservation audited: id=${id}, status=${status}`);
+    
+    // 发送短信通知
+    if (reservation.user && reservation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      const templateCode = status === 1 ? 'SMS_501095396' : 'SMS_500970389'; // 审核通过/未通过
+      await sendOrderNotification(reservation.user.phone, templateCode, {
+        order_type_name: '笼位预约订单'
+      });
+    }
   } catch (error) {
     await transaction.rollback();
     logger.error(`Audit cage reservation failed: id=${id}`, error);
@@ -720,7 +730,9 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
  */
 const completeReservation = async (id) => {
   try {
-    const reservation = await db.CageReservation.findByPk(id);
+    const reservation = await db.CageReservation.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     if (!reservation) {
       throw new Error('订单不存在');
     }
@@ -738,6 +750,14 @@ const completeReservation = async (id) => {
     // 不需要手动释放，因为检查可用性时会排除已过期的订单
     
     logger.info(`Cage reservation completed: id=${id}`);
+    
+    // 发送短信通知
+    if (reservation.user && reservation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      await sendOrderNotification(reservation.user.phone, 'SMS_501015384', {
+        order_type_name: '笼位预约订单'
+      });
+    }
   } catch (error) {
     logger.error(`Complete cage reservation failed: id=${id}`, error);
     throw error;
@@ -753,7 +773,10 @@ const cancelReservation = async (id) => {
   const transaction = await db.sequelize.transaction();
   
   try {
-    const reservation = await db.CageReservation.findByPk(id, { transaction });
+    const reservation = await db.CageReservation.findByPk(id, { 
+      include: [{ model: db.User, as: 'user' }],
+      transaction 
+    });
     if (!reservation) {
       throw new Error('订单不存在');
     }
@@ -767,6 +790,14 @@ const cancelReservation = async (id) => {
 
     // 取消订单后，预约的笼位数量自动释放
     logger.info(`Cage reservation cancelled: id=${id}`);
+    
+    // 发送短信通知
+    if (reservation.user && reservation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      await sendOrderNotification(reservation.user.phone, 'SMS_500995405', {
+        order_type_name: '笼位预约订单'
+      });
+    }
   } catch (error) {
     await transaction.rollback();
     logger.error(`Cancel cage reservation failed: id=${id}`, error);

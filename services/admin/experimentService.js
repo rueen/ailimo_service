@@ -275,7 +275,9 @@ const updateOperation = async (id, data) => {
  */
 const auditOperation = async (id, status, rejectReason, handlerId, adminId) => {
   try {
-    const operation = await db.ExperimentOperation.findByPk(id);
+    const operation = await db.ExperimentOperation.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     if (!operation) {
       throw new Error('订单不存在');
     }
@@ -312,6 +314,15 @@ const auditOperation = async (id, status, rejectReason, handlerId, adminId) => {
 
     await operation.update(updateData);
     logger.info(`Experiment operation audited: id=${id}, status=${status}`);
+    
+    // 发送短信通知
+    if (operation.user && operation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      const templateCode = status === 1 ? 'SMS_501095396' : 'SMS_500970389'; // 审核通过/未通过
+      await sendOrderNotification(operation.user.phone, templateCode, {
+        order_type_name: '实验代操作订单'
+      });
+    }
   } catch (error) {
     logger.error(`Audit experiment operation failed: id=${id}`, error);
     throw error;
@@ -325,7 +336,9 @@ const auditOperation = async (id, status, rejectReason, handlerId, adminId) => {
  */
 const completeOperation = async (id) => {
   try {
-    const operation = await db.ExperimentOperation.findByPk(id);
+    const operation = await db.ExperimentOperation.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     if (!operation) {
       throw new Error('订单不存在');
     }
@@ -340,6 +353,14 @@ const completeOperation = async (id) => {
     });
     
     logger.info(`Experiment operation completed: id=${id}`);
+    
+    // 发送短信通知
+    if (operation.user && operation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      await sendOrderNotification(operation.user.phone, 'SMS_501015384', {
+        order_type_name: '实验代操作订单'
+      });
+    }
   } catch (error) {
     logger.error(`Complete experiment operation failed: id=${id}`, error);
     throw error;
@@ -353,7 +374,9 @@ const completeOperation = async (id) => {
  */
 const cancelOperation = async (id) => {
   try {
-    const operation = await db.ExperimentOperation.findByPk(id);
+    const operation = await db.ExperimentOperation.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     if (!operation) {
       throw new Error('订单不存在');
     }
@@ -364,6 +387,14 @@ const cancelOperation = async (id) => {
 
     await operation.update({ status: 4, cancel_time: new Date() });
     logger.info(`Experiment operation cancelled: id=${id}`);
+    
+    // 发送短信通知
+    if (operation.user && operation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      await sendOrderNotification(operation.user.phone, 'SMS_500995405', {
+        order_type_name: '实验代操作订单'
+      });
+    }
   } catch (error) {
     logger.error(`Cancel experiment operation failed: id=${id}`, error);
     throw error;

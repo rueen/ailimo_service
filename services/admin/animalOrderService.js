@@ -216,7 +216,9 @@ const updateOrder = async (id, data) => {
  */
 const auditOrder = async (id, status, rejectReason, handlerId, adminId) => {
   try {
-    const order = await db.AnimalOrder.findByPk(id);
+    const order = await db.AnimalOrder.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     if (!order) {
       throw new Error('订单不存在');
     }
@@ -251,6 +253,15 @@ const auditOrder = async (id, status, rejectReason, handlerId, adminId) => {
 
     await order.update(updateData);
     logger.info(`Animal order audited: id=${id}, status=${status}`);
+    
+    // 发送短信通知
+    if (order.user && order.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      const templateCode = status === 1 ? 'SMS_501095396' : 'SMS_500970389'; // 审核通过/未通过
+      await sendOrderNotification(order.user.phone, templateCode, {
+        order_type_name: '动物订购订单'
+      });
+    }
   } catch (error) {
     logger.error(`Audit animal order failed: id=${id}`, error);
     throw error;
@@ -264,7 +275,9 @@ const auditOrder = async (id, status, rejectReason, handlerId, adminId) => {
  */
 const completeOrder = async (id) => {
   try {
-    const order = await db.AnimalOrder.findByPk(id);
+    const order = await db.AnimalOrder.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     if (!order) {
       throw new Error('订单不存在');
     }
@@ -279,6 +292,14 @@ const completeOrder = async (id) => {
     });
     
     logger.info(`Animal order completed: id=${id}`);
+    
+    // 发送短信通知
+    if (order.user && order.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      await sendOrderNotification(order.user.phone, 'SMS_501015384', {
+        order_type_name: '动物订购订单'
+      });
+    }
   } catch (error) {
     logger.error(`Complete animal order failed: id=${id}`, error);
     throw error;
@@ -292,7 +313,9 @@ const completeOrder = async (id) => {
  */
 const cancelOrder = async (id) => {
   try {
-    const order = await db.AnimalOrder.findByPk(id);
+    const order = await db.AnimalOrder.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     if (!order) {
       throw new Error('订单不存在');
     }
@@ -303,6 +326,14 @@ const cancelOrder = async (id) => {
 
     await order.update({ status: 4, cancel_time: new Date() });
     logger.info(`Animal order cancelled: id=${id}`);
+    
+    // 发送短信通知
+    if (order.user && order.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      await sendOrderNotification(order.user.phone, 'SMS_500995405', {
+        order_type_name: '动物订购订单'
+      });
+    }
   } catch (error) {
     logger.error(`Cancel animal order failed: id=${id}`, error);
     throw error;

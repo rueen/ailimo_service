@@ -450,7 +450,10 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
   const transaction = await db.sequelize.transaction();
   
   try {
-    const reservation = await db.EquipmentReservation.findByPk(id, { transaction });
+    const reservation = await db.EquipmentReservation.findByPk(id, { 
+      include: [{ model: db.User, as: 'user' }],
+      transaction 
+    });
     
     if (!reservation) {
       throw new Error('订单不存在');
@@ -496,6 +499,15 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
     await transaction.commit();
     
     logger.info(`Equipment reservation audited: id=${id}, status=${status}, by=${adminId}`);
+    
+    // 发送短信通知
+    if (reservation.user && reservation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      const templateCode = status === 1 ? 'SMS_501095396' : 'SMS_500970389'; // 审核通过/未通过
+      await sendOrderNotification(reservation.user.phone, templateCode, {
+        order_type_name: '设备预约订单'
+      });
+    }
   } catch (err) {
     await transaction.rollback();
     logger.error(`Audit equipment reservation failed: ${err.message}`);
@@ -510,7 +522,9 @@ const auditReservation = async (id, status, rejectReason, handlerId, adminId) =>
  */
 const completeReservation = async (id) => {
   try {
-    const reservation = await db.EquipmentReservation.findByPk(id);
+    const reservation = await db.EquipmentReservation.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     
     if (!reservation) {
       throw new Error('订单不存在');
@@ -526,6 +540,14 @@ const completeReservation = async (id) => {
     });
     
     logger.info(`Equipment reservation completed: id=${id}`);
+    
+    // 发送短信通知
+    if (reservation.user && reservation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      await sendOrderNotification(reservation.user.phone, 'SMS_501015384', {
+        order_type_name: '设备预约订单'
+      });
+    }
   } catch (err) {
     logger.error(`Complete equipment reservation failed: ${err.message}`);
     throw err;
@@ -539,7 +561,9 @@ const completeReservation = async (id) => {
  */
 const cancelReservation = async (id) => {
   try {
-    const reservation = await db.EquipmentReservation.findByPk(id);
+    const reservation = await db.EquipmentReservation.findByPk(id, {
+      include: [{ model: db.User, as: 'user' }]
+    });
     
     if (!reservation) {
       throw new Error('订单不存在');
@@ -552,6 +576,14 @@ const cancelReservation = async (id) => {
     await reservation.update({ status: 4, cancel_time: new Date() });
     
     logger.info(`Equipment reservation cancelled: id=${id}`);
+    
+    // 发送短信通知
+    if (reservation.user && reservation.user.phone) {
+      const { sendOrderNotification } = require('../../utils/sms');
+      await sendOrderNotification(reservation.user.phone, 'SMS_500995405', {
+        order_type_name: '设备预约订单'
+      });
+    }
   } catch (err) {
     logger.error(`Cancel equipment reservation failed: ${err.message}`);
     throw err;

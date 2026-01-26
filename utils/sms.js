@@ -113,7 +113,79 @@ const verifyCode = (phone, code, smsCodeRecord) => {
   };
 };
 
+/**
+ * 发送订单状态通知短信
+ * @param {String} phone - 手机号
+ * @param {String} templateCode - 短信模板代码
+ * @param {Object} templateParams - 模板参数
+ * @returns {Promise<Object>}
+ */
+const sendOrderNotification = async (phone, templateCode, templateParams) => {
+  // 如果未配置短信服务或使用模拟模式
+  if (!config.sms.enabled || config.sms.mockMode.enabled) {
+    logger.info(`[短信模拟] 发送订单通知到 ${phone}: 模板=${templateCode}, 参数=${JSON.stringify(templateParams)}`);
+    console.log(`\n========== 订单通知短信 ==========`);
+    console.log(`手机号: ${phone}`);
+    console.log(`模板: ${templateCode}`);
+    console.log(`参数: ${JSON.stringify(templateParams, null, 2)}`);
+    console.log(`==================================\n`);
+    
+    return {
+      success: true,
+      message: '通知已发送（模拟模式）'
+    };
+  }
+  
+  // 阿里云短信发送
+  try {
+    // 创建客户端，设置超时时间为5秒
+    const client = new Dysmsapi20170525({
+      accessKeyId: config.sms.accessKeyId,
+      accessKeySecret: config.sms.accessKeySecret,
+      endpoint: 'dysmsapi.aliyuncs.com',
+      readTimeout: 5000,     // 读取超时5秒
+      connectTimeout: 5000   // 连接超时5秒
+    });
+    
+    // 发送短信请求参数
+    const sendSmsRequest = new SendSmsRequest({
+      phoneNumbers: phone,
+      signName: config.sms.signName,
+      templateCode: templateCode,
+      templateParam: JSON.stringify(templateParams)
+    });
+    
+    // 发送短信
+    const result = await client.sendSms(sendSmsRequest);
+    
+    // 检查发送结果
+    if (result.body.code === 'OK') {
+      logger.info(`订单通知短信发送成功 - 手机号: ${phone}, 模板: ${templateCode}, BizId: ${result.body.bizId}`);
+      return {
+        success: true,
+        message: '通知已发送',
+        bizId: result.body.bizId
+      };
+    } else {
+      logger.warn(`订单通知短信发送失败 - 手机号: ${phone}, 模板: ${templateCode}, 错误: ${result.body.message}`);
+      // 短信发送失败不抛出异常，避免影响订单流程
+      return {
+        success: false,
+        message: result.body.message || '短信发送失败'
+      };
+    }
+  } catch (err) {
+    logger.warn(`订单通知短信发送异常 - 手机号: ${phone}, 模板: ${templateCode}, 原因: ${err.name || '网络错误'}`);
+    // 短信发送异常不抛出异常，避免影响订单流程
+    return {
+      success: false,
+      message: '发送通知失败'
+    };
+  }
+};
+
 module.exports = {
   sendCode,
-  verifyCode
+  verifyCode,
+  sendOrderNotification
 };

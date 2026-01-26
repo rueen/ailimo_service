@@ -28,7 +28,8 @@ module.exports = {
   
   // 模拟模式（未配置短信服务时使用）
   mockMode: {
-    enabled: false,         // 已启用真实短信服务，关闭模拟模式
+    // 开发环境自动启用模拟模式，避免连接超时
+    enabled: process.env.NODE_ENV === 'development',
     defaultCode: '123456'   // 模拟验证码
   }
 };
