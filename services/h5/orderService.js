@@ -1414,6 +1414,7 @@ const getResearchGroupList = async (department_id) => {
     const where = department_id ? { department_id: department_id } : {};
     return await db.ResearchGroup.findAll({
       where,
+      attributes: ['id', 'name', 'department_id', 'created_at', 'updated_at'], // 排除 remark 字段
       order: [['name', 'ASC']]
     });
   } catch (error) {

@@ -294,13 +294,13 @@ const getResearchGroupDetail = async (req, res, next) => {
  */
 const createResearchGroup = async (req, res, next) => {
   try {
-    const { name, department_id } = req.body;
+    const { name, department_id, remark } = req.body;
 
     if (!name || !department_id) {
       return response.badRequest(res, '课题组名称和学院不能为空');
     }
 
-    const group = await userService.createResearchGroup(name, department_id);
+    const group = await userService.createResearchGroup(name, department_id, remark);
     return response.success(res, group, '创建成功');
   } catch (err) {
     next(err);
@@ -313,13 +313,13 @@ const createResearchGroup = async (req, res, next) => {
 const updateResearchGroup = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, department_id } = req.body;
+    const { name, department_id, remark } = req.body;
 
     if (!name || !department_id) {
       return response.badRequest(res, '课题组名称和学院不能为空');
     }
 
-    await userService.updateResearchGroup(id, name, department_id);
+    await userService.updateResearchGroup(id, name, department_id, remark);
     return response.success(res, null, '更新成功');
   } catch (err) {
     next(err);

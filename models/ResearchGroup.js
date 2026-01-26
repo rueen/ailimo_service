@@ -20,6 +20,11 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
       comment: '所属学院ID'
+    },
+    remark: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: '备注'
     }
   }, {
     tableName: 'research_groups',

@@ -751,9 +751,10 @@ const getResearchGroupDetail = async (id) => {
  * 创建课题组
  * @param {String} name - 课题组名称
  * @param {Number} departmentId - 学院ID
+ * @param {String} remark - 备注
  * @returns {Promise<Object>}
  */
-const createResearchGroup = async (name, departmentId) => {
+const createResearchGroup = async (name, departmentId, remark) => {
   try {
     // 验证学院是否存在
     const dept = await db.Department.findByPk(departmentId);
@@ -763,7 +764,8 @@ const createResearchGroup = async (name, departmentId) => {
 
     const group = await db.ResearchGroup.create({ 
       name, 
-      department_id: departmentId 
+      department_id: departmentId,
+      remark
     });
     logger.info(`Research group created: ${name}, deptId=${departmentId}`);
     return group;
@@ -781,9 +783,10 @@ const createResearchGroup = async (name, departmentId) => {
  * @param {Number} id - 课题组ID
  * @param {String} name - 课题组名称
  * @param {Number} departmentId - 学院ID
+ * @param {String} remark - 备注
  * @returns {Promise<void>}
  */
-const updateResearchGroup = async (id, name, departmentId) => {
+const updateResearchGroup = async (id, name, departmentId, remark) => {
   try {
     const group = await db.ResearchGroup.findByPk(id);
     if (!group) {
@@ -798,7 +801,7 @@ const updateResearchGroup = async (id, name, departmentId) => {
       }
     }
 
-    await group.update({ name, department_id: departmentId });
+    await group.update({ name, department_id: departmentId, remark });
     logger.info(`Research group updated: id=${id}`);
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
