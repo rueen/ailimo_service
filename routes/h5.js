@@ -77,6 +77,7 @@ router.get('/advance-days', orderController.getAdvanceDaysConfigs);
 router.get('/cases', orderController.getCaseList);
 router.get('/cases/:id', orderController.getCaseDetail);
 router.get('/company-info', orderController.getCompanyInfo);
+router.get('/price-list', orderController.getPriceList);
 
 // ==================== 其他服务 ====================
 const otherServiceController = require('../controllers/h5/otherServiceController');

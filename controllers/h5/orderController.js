@@ -143,6 +143,38 @@ const getCompanyInfo = async (req, res, next) => {
   }
 };
 
+/**
+ * 获取价格表文件
+ * 从公司配置中获取价格表URL，请求OSS并返回文件二进制流
+ */
+const getPriceList = async (req, res, next) => {
+  try {
+    const axios = require('axios');
+    const { url } = await orderService.getPriceList();
+    
+    // 请求OSS获取文件
+    const ossResponse = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: 30000 // 30秒超时
+    });
+    
+    // 设置响应头
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="price_list.xlsx"');
+    
+    // 返回二进制数据
+    return res.send(ossResponse.data);
+  } catch (err) {
+    if (err.message === '价格表未配置') {
+      return response.error(res, '价格表未配置', 404);
+    }
+    if (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT') {
+      return response.error(res, '获取价格表超时，请稍后重试', 504);
+    }
+    next(err);
+  }
+};
+
 // ==================== 时间段查询 ====================
 
 /**
@@ -436,6 +468,7 @@ module.exports = {
   getCaseList,
   getCaseDetail,
   getCompanyInfo,
+  getPriceList,
   
   // 时间段
   getEquipmentTimeSlots,

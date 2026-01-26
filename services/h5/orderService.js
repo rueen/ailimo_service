@@ -876,6 +876,26 @@ const getCompanyInfo = async () => {
   }
 };
 
+/**
+ * 获取价格表文件
+ * @returns {Promise<Object>} 返回包含文件URL的对象
+ */
+const getPriceList = async () => {
+  try {
+    const info = await db.CompanyInfo.findByPk(1);
+    if (!info || !info.content || !info.content.price_list) {
+      throw new Error('价格表未配置');
+    }
+    
+    return {
+      url: info.content.price_list
+    };
+  } catch (error) {
+    logger.error('Get price list failed:', error);
+    throw error;
+  }
+};
+
 // ==================== 获取时间段列表 ====================
 
 /**
@@ -1395,6 +1415,7 @@ module.exports = {
   getCaseList,
   getCaseDetail,
   getCompanyInfo,
+  getPriceList,
   
   // 时间段
   getEquipmentTimeSlots,
