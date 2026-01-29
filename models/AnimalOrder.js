@@ -107,6 +107,12 @@ module.exports = (sequelize) => {
       defaultValue: 0,
       comment: '是否打耳标：0-不需要 1-需要'
     },
+    quantity: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+      defaultValue: 1,
+      comment: '数量'
+    },
     status: {
       type: DataTypes.TINYINT,
       defaultValue: 0,
