@@ -47,6 +47,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       comment: '环境ID'
     },
+    room_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      comment: '房间ID'
+    },
     quantity: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -113,7 +118,8 @@ module.exports = (sequelize) => {
       { fields: ['end_date'] },
       { fields: ['status'] },
       { fields: ['source'] },
-      { fields: ['created_by_admin_id'] }
+      { fields: ['created_by_admin_id'] },
+      { fields: ['room_id'] }
     ],
     comment: '笼位预约订单表'
   });

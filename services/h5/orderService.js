@@ -165,21 +165,31 @@ const createCageReservation = async (userId, data) => {
   const transaction = await db.sequelize.transaction();
   
   try {
-    const { animal_type_id, environment_id, start_date, end_date, quantity } = data;
+    const { animal_type_id, environment_id, room_id, start_date, end_date, quantity } = data;
 
-    // 根据动物类型+环境查询匹配的笼位，并加锁防止并发问题
+    // 根据动物类型+环境+房间查询匹配的笼位，并加锁防止并发问题
+    const where = {
+      animal_type_id,
+      environment_id,
+      status: 1  // 只查询启用的笼位
+    };
+    
+    // 如果指定了房间，必须匹配房间ID
+    if (room_id) {
+      where.room_id = room_id;
+    }
+    
     const cage = await db.Cage.findOne({
-      where: {
-        animal_type_id,
-        environment_id,
-        status: 1  // 只查询启用的笼位
-      },
+      where,
       transaction,
       lock: transaction.LOCK.UPDATE  // 加悲观锁
     });
 
     if (!cage) {
-      throw new Error('未找到匹配的笼位（动物类型+环境）');
+      const msg = room_id 
+        ? '未找到匹配的笼位（动物类型+环境+房间）' 
+        : '未找到匹配的笼位（动物类型+环境）';
+      throw new Error(msg);
     }
 
     // 检查预约数量
@@ -535,6 +545,7 @@ const getOrdersByType = async (userId, type, filters = {}, paginate = true) => {
         include = [
         { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
           { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
+          { model: db.CageRoom, as: 'room', attributes: ['id', 'name'], required: false },
           { model: db.Handler, as: 'handler', attributes: ['id', 'name'] }
         ];
       typeConfig = { dateField: 'start_date' }; // 笼位预约使用 start_date
@@ -739,6 +750,7 @@ const getOrderDetail = async (userId, type, orderId) => {
           { model: db.Cage, as: 'cage' },
           { model: db.AnimalType, as: 'animal_type' },
           { model: db.EnvironmentType, as: 'environment' },
+          { model: db.CageRoom, as: 'room', required: false },
           { model: db.CagePurpose, as: 'purpose' },
           { model: db.Handler, as: 'handler' }
         ];
@@ -1158,13 +1170,61 @@ const getEnvironmentsByAnimalType = async (animalTypeId) => {
 };
 
 /**
+ * 根据动物类型和环境类型获取房间选项
+ * @param {Number} animalTypeId - 动物类型ID
+ * @param {Number} environmentId - 环境类型ID
+ * @returns {Promise<Array>}
+ */
+const getRoomsByAnimalTypeAndEnvironment = async (animalTypeId, environmentId) => {
+  try {
+    // 查询该动物类型和环境类型下的所有笼位
+    const cages = await db.Cage.findAll({
+      where: { 
+        animal_type_id: animalTypeId,
+        environment_id: environmentId,
+        status: 1,  // 只查询启用的笼位
+        room_id: { [Op.ne]: null }  // room_id 不为空
+      },
+      include: [
+        {
+          model: db.CageRoom,
+          as: 'room',
+          attributes: ['id', 'name']
+        }
+      ],
+      attributes: ['room_id'],
+      group: ['room_id']  // 去重
+    });
+
+    // 提取并去重房间
+    const rooms = [];
+    const roomIds = new Set();
+    
+    for (const cage of cages) {
+      if (cage.room && !roomIds.has(cage.room.id)) {
+        roomIds.add(cage.room.id);
+        rooms.push({
+          id: cage.room.id,
+          name: cage.room.name
+        });
+      }
+    }
+
+    return rooms;
+  } catch (error) {
+    logger.error(`Get rooms by animal type and environment failed: animal_type_id=${animalTypeId}, environment_id=${environmentId}`, error);
+    throw error;
+  }
+};
+
+/**
  * 查询笼位在指定日期范围内的剩余可用数量
  * @param {Object} params - 查询参数
  * @returns {Promise<Object>}
  */
 const getCageAvailableQuantity = async (params) => {
   try {
-    const { animal_type_id, environment_id, start_date, end_date, exclude_reservation_id } = params;
+    const { animal_type_id, environment_id, room_id, start_date, end_date, exclude_reservation_id } = params;
 
     // 验证动物类型和环境是否存在
     const animalType = await db.AnimalType.findByPk(animal_type_id);
@@ -1178,13 +1238,14 @@ const getCageAvailableQuantity = async (params) => {
     }
 
     // 查询匹配的笼位总数量
-    const cage = await db.Cage.findOne({
-      where: {
-        animal_type_id,
-        environment_id,
-        status: 1
-      }
-    });
+    const where = {
+      animal_type_id,
+      environment_id,
+      room_id,
+      status: 1
+    };
+    
+    const cage = await db.Cage.findOne({ where });
 
     // 如果没有匹配的笼位，返回空结果
     if (!cage) {
@@ -1196,18 +1257,52 @@ const getCageAvailableQuantity = async (params) => {
 
     const totalQuantity = cage.quantity;
 
-    // 计算日期范围内的最小可用数量
-    const availableQuantity = await checkCageAvailabilityForDateRange(
-      cage.id,
-      start_date,
-      end_date,
-      null, // 无事务
-      exclude_reservation_id // 排除的订单ID
-    );
+    // 查询已预约数量
+    const reservationWhere = {
+      animal_type_id,
+      environment_id,
+      room_id,
+      status: [0, 1] // 待审核和进行中
+    };
+    
+    if (exclude_reservation_id) {
+      reservationWhere.id = { [Op.ne]: exclude_reservation_id };
+    }
+
+    // 计算日期范围内每一天的已预约数量，取最大值
+    let maxReservedQuantity = 0;
+    
+    if (start_date) {
+      const startDate = new Date(start_date);
+      const endDate = end_date ? new Date(end_date) : new Date(start_date);
+      
+      // 遍历日期范围
+      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateStr = date.toISOString().split('T')[0];
+        
+        // 查询在该日期有重叠的所有订单
+        const reservations = await db.CageReservation.findAll({
+          where: {
+            ...reservationWhere,
+            start_date: { [Op.lte]: dateStr },
+            [Op.or]: [
+              { end_date: { [Op.gte]: dateStr } },
+              { end_date: null } // 长期预约
+            ]
+          }
+        });
+        
+        // 累加该日期的预约数量
+        const reservedQuantity = reservations.reduce((sum, res) => sum + res.quantity, 0);
+        maxReservedQuantity = Math.max(maxReservedQuantity, reservedQuantity);
+      }
+    }
+
+    const availableQuantity = totalQuantity - maxReservedQuantity;
 
     return {
       total_quantity: totalQuantity,
-      available_quantity: availableQuantity
+      available_quantity: Math.max(0, availableQuantity)
     };
   } catch (error) {
     logger.error('Get cage available quantity failed:', error);
@@ -1342,6 +1437,22 @@ const getCagePurposeList = async () => {
 };
 
 /**
+ * 获取房间列表
+ * @returns {Promise<Array>}
+ */
+const getCageRoomList = async () => {
+  try {
+    return await db.CageRoom.findAll({
+      attributes: ['id', 'name'],
+      order: [['name', 'ASC']]
+    });
+  } catch (error) {
+    logger.error('Get cage room list failed:', error);
+    throw error;
+  }
+};
+
+/**
  * 获取动物规格列表
  * @returns {Promise<Array>}
  */
@@ -1451,6 +1562,7 @@ module.exports = {
   getEquipmentAvailableSlots,
   getCageList,
   getEnvironmentsByAnimalType,
+  getRoomsByAnimalTypeAndEnvironment,
   getCageAvailableQuantity,
   getOperationContentList,
   getAnimalBrandList,
@@ -1463,6 +1575,7 @@ module.exports = {
   getEnvironmentTypeList,
   getAnimalTypeList,
   getCagePurposeList,
+  getCageRoomList,
   
   // 系统配置
   getAdvanceDaysConfigs

@@ -105,6 +105,7 @@ router.get('/equipment-available-slots', adminAuth, equipmentController.getAvail
 // ==================== 笼位预约 ====================
 // 笼位管理
 router.get('/cages/environments-by-animal-type', adminAuth, cageController.getEnvironmentsByAnimalType);
+router.get('/cages/rooms-by-animal-type-and-environment', adminAuth, cageController.getRoomsByAnimalTypeAndEnvironment);
 router.get('/cages/available-quantity', adminAuth, cageController.getCageAvailableQuantity);
 router.get('/cages', adminAuth, permission('cage:list'), cageController.getCageList);
 router.get('/cages/:id', adminAuth, permission('cage:detail'), cageController.getCageDetail);
@@ -227,6 +228,12 @@ router.get('/environment-types/options', adminAuth, contentController.getEnviron
 router.post('/environment-types', adminAuth, permission('environment_type:create'), contentController.createEnvironmentType);
 router.put('/environment-types/:id', adminAuth, permission('environment_type:update'), contentController.updateEnvironmentType);
 router.delete('/environment-types/:id', adminAuth, permission('environment_type:delete'), contentController.deleteEnvironmentType);
+
+// 笼位房间管理
+router.get('/cage-rooms', adminAuth, contentController.getCageRoomList);
+router.post('/cage-rooms', adminAuth, permission('cage_room:create'), contentController.createCageRoom);
+router.put('/cage-rooms/:id', adminAuth, permission('cage_room:update'), contentController.updateCageRoom);
+router.delete('/cage-rooms/:id', adminAuth, permission('cage_room:delete'), contentController.deleteCageRoom);
 
 // 动物类型管理
 router.get('/animal-types', adminAuth, contentController.getAnimalTypeList);

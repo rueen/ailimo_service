@@ -56,6 +56,7 @@ router.get('/equipment', orderController.getEquipmentList);
 router.get('/equipment/:id', orderController.getEquipmentDetail);
 router.get('/equipment/:id/available-slots', orderController.getEquipmentAvailableSlots);
 router.get('/cages/environments-by-animal-type', orderController.getEnvironmentsByAnimalType);
+router.get('/cages/rooms-by-animal-type-and-environment', orderController.getRoomsByAnimalTypeAndEnvironment);
 router.get('/cages/available-quantity', orderController.getCageAvailableQuantity);
 router.get('/cages', orderController.getCageList);
 router.get('/operation-contents', orderController.getOperationContentList);

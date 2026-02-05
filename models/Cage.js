@@ -21,6 +21,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       comment: '环境ID'
     },
+    room_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      comment: '房间ID'
+    },
     quantity: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -38,7 +43,8 @@ module.exports = (sequelize) => {
     updatedAt: 'updated_at',
     indexes: [
       { fields: ['animal_type_id'] },
-      { fields: ['environment_id'] }
+      { fields: ['environment_id'] },
+      { fields: ['room_id'] }
     ],
     comment: '笼位表'
   });

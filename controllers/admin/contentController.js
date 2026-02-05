@@ -264,6 +264,76 @@ const getEnvironmentTypeOptions = async (req, res, next) => {
   }
 };
 
+// ==================== 笼位房间管理 ====================
+
+/**
+ * 获取笼位房间列表
+ */
+const getCageRoomList = async (req, res, next) => {
+  try {
+    const result = await contentService.getCageRoomList(req.query);
+    return response.paginate(
+      res,
+      result.list,
+      result.total,
+      result.page,
+      result.pageSize
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 创建笼位房间
+ */
+const createCageRoom = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    const room = await contentService.createCageRoom(name);
+    return response.success(res, room, '创建成功');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 更新笼位房间
+ */
+const updateCageRoom = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    await contentService.updateCageRoom(req.params.id, name);
+    return response.success(res, null, '更新成功');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 删除笼位房间
+ */
+const deleteCageRoom = async (req, res, next) => {
+  try {
+    await contentService.deleteCageRoom(req.params.id);
+    return response.success(res, null, '删除成功');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * 获取房间选项列表（用于下拉选择）
+ */
+const getCageRoomOptions = async (req, res, next) => {
+  try {
+    const options = await contentService.getCageRoomOptions();
+    return response.success(res, options);
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ==================== 动物类型管理 ====================
 
 /**
@@ -360,6 +430,13 @@ module.exports = {
   updateEnvironmentType,
   deleteEnvironmentType,
   getEnvironmentTypeOptions,
+  
+  // 笼位房间管理
+  getCageRoomList,
+  createCageRoom,
+  updateCageRoom,
+  deleteCageRoom,
+  getCageRoomOptions,
   
   // 动物类型管理
   getAnimalTypeList,

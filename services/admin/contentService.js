@@ -635,6 +635,133 @@ const getEnvironmentTypeOptions = async () => {
 
 // ==================== 动物类型管理 ====================
 
+// ==================== 笼位房间管理 ====================
+
+/**
+ * 获取笼位房间列表
+ * @param {Object} params - 查询参数
+ * @returns {Promise<Object>}
+ */
+const getCageRoomList = async (params = {}) => {
+  try {
+    const { page = 1, pageSize = 10, name } = params;
+    
+    const where = {};
+    if (name) {
+      where.name = { [Op.like]: `%${name}%` };
+    }
+
+    const offset = (page - 1) * pageSize;
+    const { count, rows } = await db.CageRoom.findAndCountAll({
+      where,
+      offset,
+      limit: parseInt(pageSize),
+      order: [['created_at', 'DESC']]
+    });
+
+    return {
+      list: rows,
+      total: count,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      totalPages: Math.ceil(count / pageSize)
+    };
+  } catch (error) {
+    logger.error('Get cage room list failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * 创建笼位房间
+ * @param {String} name - 房间名称
+ * @returns {Promise<Object>}
+ */
+const createCageRoom = async (name) => {
+  try {
+    const room = await db.CageRoom.create({
+      name
+    });
+    logger.info(`Cage room created: ${name}`);
+    return room;
+  } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      throw new Error('房间名称已存在');
+    }
+    logger.error('Create cage room failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * 更新笼位房间
+ * @param {Number} id - 房间ID
+ * @param {String} name - 房间名称
+ * @returns {Promise<void>}
+ */
+const updateCageRoom = async (id, name) => {
+  try {
+    const room = await db.CageRoom.findByPk(id);
+    if (!room) {
+      throw new Error('房间不存在');
+    }
+
+    await room.update({ name });
+    logger.info(`Cage room updated: id=${id}`);
+  } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      throw new Error('房间名称已存在');
+    }
+    logger.error('Update cage room failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * 删除笼位房间
+ * @param {Number} id - 房间ID
+ * @returns {Promise<void>}
+ */
+const deleteCageRoom = async (id) => {
+  try {
+    const room = await db.CageRoom.findByPk(id);
+    if (!room) {
+      throw new Error('房间不存在');
+    }
+
+    // 检查是否有笼位使用该房间
+    const cageCount = await db.Cage.count({ where: { room_id: id } });
+    if (cageCount > 0) {
+      throw new Error('该房间下还有笼位，无法删除');
+    }
+
+    await room.destroy();
+    logger.info(`Cage room deleted: id=${id}`);
+  } catch (error) {
+    logger.error('Delete cage room failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取房间选项列表
+ * @returns {Promise<Array>}
+ */
+const getCageRoomOptions = async () => {
+  try {
+    const rooms = await db.CageRoom.findAll({
+      attributes: ['id', 'name'],
+      order: [['name', 'ASC']]
+    });
+    return rooms;
+  } catch (error) {
+    logger.error('Get cage room options failed:', error);
+    throw error;
+  }
+};
+
+// ==================== 动物类型管理 ====================
+
 /**
  * 获取动物类型列表（分页）
  * @param {Object} params - 查询参数
@@ -791,6 +918,13 @@ module.exports = {
   updateEnvironmentType,
   deleteEnvironmentType,
   getEnvironmentTypeOptions,
+  
+  // 笼位房间管理
+  getCageRoomList,
+  createCageRoom,
+  updateCageRoom,
+  deleteCageRoom,
+  getCageRoomOptions,
   
   // 动物类型管理
   getAnimalTypeList,

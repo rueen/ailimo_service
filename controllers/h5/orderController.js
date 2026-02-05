@@ -275,17 +275,41 @@ const getEnvironmentsByAnimalType = async (req, res, next) => {
 };
 
 /**
+ * 根据动物类型和环境类型获取房间选项
+ */
+const getRoomsByAnimalTypeAndEnvironment = async (req, res, next) => {
+  try {
+    const { animal_type_id, environment_id } = req.query;
+    
+    if (!animal_type_id) {
+      return response.badRequest(res, '动物类型ID不能为空');
+    }
+    if (!environment_id) {
+      return response.badRequest(res, '环境类型ID不能为空');
+    }
+    
+    const rooms = await orderService.getRoomsByAnimalTypeAndEnvironment(animal_type_id, environment_id);
+    return response.success(res, rooms);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 查询笼位剩余可用数量
  */
 const getCageAvailableQuantity = async (req, res, next) => {
   try {
-    const { animal_type_id, environment_id, start_date, end_date, exclude_reservation_id } = req.query;
+    const { animal_type_id, environment_id, room_id, start_date, end_date, exclude_reservation_id } = req.query;
     
     if (!animal_type_id) {
       return response.badRequest(res, '动物类型ID不能为空');
     }
     if (!environment_id) {
       return response.badRequest(res, '环境ID不能为空');
+    }
+    if (!room_id) {
+      return response.badRequest(res, '房间ID不能为空');
     }
     if (!start_date) {
       return response.badRequest(res, '开始日期不能为空');
@@ -294,6 +318,7 @@ const getCageAvailableQuantity = async (req, res, next) => {
     const result = await orderService.getCageAvailableQuantity({
       animal_type_id,
       environment_id,
+      room_id,
       start_date,
       end_date: end_date || null,
       exclude_reservation_id: exclude_reservation_id ? parseInt(exclude_reservation_id) : null
@@ -441,6 +466,18 @@ const getCagePurposeList = async (req, res, next) => {
 };
 
 /**
+ * 获取房间列表
+ */
+const getCageRoomList = async (req, res, next) => {
+  try {
+    const list = await orderService.getCageRoomList();
+    return response.success(res, list);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 获取提前预约天数配置
  */
 const getAdvanceDaysConfigs = async (req, res, next) => {
@@ -480,6 +517,7 @@ module.exports = {
   getEquipmentAvailableSlots,
   getCageList,
   getEnvironmentsByAnimalType,
+  getRoomsByAnimalTypeAndEnvironment,
   getCageAvailableQuantity,
   getOperationContentList,
   getAnimalBrandList,
@@ -492,6 +530,7 @@ module.exports = {
   getEnvironmentTypeList,
   getAnimalTypeList,
   getCagePurposeList,
+  getCageRoomList,
   
   // 系统配置
   getAdvanceDaysConfigs

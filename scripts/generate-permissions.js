@@ -119,6 +119,17 @@ const PERMISSION_CONFIG = {
           { name: '删除笼位', code: 'cage:delete' },
         ]
       },
+      // 笼位房间管理
+      {
+        name: '笼位房间管理',
+        code: 'cage_room',
+        children: [
+          { name: '笼位房间列表', code: 'cage_room:list' },
+          { name: '新增笼位房间', code: 'cage_room:create' },
+          { name: '编辑笼位房间', code: 'cage_room:update' },
+          { name: '删除笼位房间', code: 'cage_room:delete' },
+        ]
+      },
       // 笼位用途管理
       {
         name: '用途管理',
