@@ -163,9 +163,9 @@ const updateOrder = async (id, data) => {
       throw new Error('订单不存在');
     }
 
-    if (order.status !== 0) {
-      throw new Error('只有待审核的订单才能修改');
-    }
+    // if (order.status !== 0) {
+    //   throw new Error('只有待审核的订单才能修改');
+    // }
 
     await order.update(data);
     logger.info(`Reagent order updated: id=${id}`);

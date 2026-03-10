@@ -653,9 +653,9 @@ const updateReservation = async (id, data) => {
       throw new Error('订单不存在');
     }
 
-    if (reservation.status !== 0) {
-      throw new Error('只有待审核的订单才能修改');
-    }
+    // if (reservation.status !== 0) {
+    //   throw new Error('只有待审核的订单才能修改');
+    // }
 
     // 如果修改了动物类型、环境、笼位、日期或数量，需要重新检查可用性
     if (

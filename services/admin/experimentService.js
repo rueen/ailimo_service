@@ -236,9 +236,9 @@ const updateOperation = async (id, data) => {
       throw new Error('订单不存在');
     }
 
-    if (operation.status !== 0) {
-      throw new Error('只有待审核的订单才能修改');
-    }
+    // if (operation.status !== 0) {
+    //   throw new Error('只有待审核的订单才能修改');
+    // }
 
     // 如果修改了操作内容，检查是否存在
     if (data.operation_content_id) {
