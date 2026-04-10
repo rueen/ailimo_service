@@ -251,6 +251,18 @@ const getTimeSlotOptions = async (req, res, next) => {
   }
 };
 
+/**
+ * 导出实验代操作订单列表
+ */
+const exportOperationList = async (req, res, next) => {
+  try {
+    const list = await experimentService.exportOperationList(req.query);
+    return response.success(res, list);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   // 订单管理
   getOperationList,
@@ -260,6 +272,7 @@ module.exports = {
   auditOperation,
   completeOperation,
   cancelOperation,
+  exportOperationList,
   
   // 操作内容管理
   getOperationContentList,

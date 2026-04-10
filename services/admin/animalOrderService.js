@@ -883,6 +883,69 @@ const getRequirementOptions = async () => {
   }
 };
 
+/**
+ * 导出动物订单列表（不分页）
+ * @param {Object} params - 查询参数（同 getOrderList，忽略 page/pageSize）
+ * @returns {Promise<Array>}
+ */
+const exportOrderList = async (params) => {
+  try {
+    const {
+      user_id,
+      status,
+      brand_id,
+      variety_id,
+      start_date,
+      end_date,
+      order_sn
+    } = params;
+
+    const where = {};
+    if (user_id) where.user_id = user_id;
+    if (status !== undefined) where.status = status;
+    if (brand_id) where.brand_id = brand_id;
+    if (variety_id) where.variety_id = variety_id;
+    if (start_date && end_date) {
+      where.delivery_date = { [Op.between]: [start_date, end_date] };
+    } else if (start_date) {
+      where.delivery_date = { [Op.gte]: start_date };
+    } else if (end_date) {
+      where.delivery_date = { [Op.lte]: end_date };
+    }
+    if (order_sn) where.order_sn = order_sn;
+
+    const rows = await db.AnimalOrder.findAll({
+      where,
+      include: [
+        { model: db.AnimalBrand, as: 'brand', attributes: ['id', 'name'] },
+        { model: db.AnimalVariety, as: 'variety', attributes: ['id', 'name'] },
+        { model: db.AnimalSpecification, as: 'specification', attributes: ['id', 'name'] },
+        { model: db.AnimalRequirement, as: 'requirement', attributes: ['id', 'name'] },
+        { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
+        { model: db.User, as: 'user', attributes: ['id', 'name', 'phone'] },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] },
+        { model: db.Region, as: 'province', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'city', attributes: ['id', 'name', 'code'] },
+        { model: db.Region, as: 'district', attributes: ['id', 'name', 'code'] }
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    return rows.map(order => {
+      const data = order.toJSON();
+      if (data.auditBy) {
+        data.audit_by = data.auditBy;
+        delete data.auditBy;
+      }
+      return data;
+    });
+  } catch (error) {
+    logger.error('Export animal order list failed:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   // 订单管理
   getOrderList,
@@ -892,6 +955,7 @@ module.exports = {
   auditOrder,
   completeOrder,
   cancelOrder,
+  exportOrderList,
   
   // 品牌管理
   getBrandList,

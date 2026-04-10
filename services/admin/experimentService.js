@@ -696,6 +696,94 @@ const getTimeSlotOptions = async () => {
   }
 };
 
+/**
+ * 导出实验代操作订单列表（不分页）
+ * @param {Object} params - 查询参数（同 getOperationList，忽略 page/pageSize）
+ * @returns {Promise<Array>}
+ */
+const exportOperationList = async (params) => {
+  try {
+    const {
+      user_id,
+      user_name,
+      user_phone,
+      status,
+      operation_content_id,
+      animal_type_id,
+      handler_id,
+      reservation_date,
+      start_date,
+      end_date,
+      order_sn,
+    } = params;
+
+    const where = {};
+    if (user_id) where.user_id = user_id;
+    if (status !== undefined) where.status = status;
+    if (operation_content_id) where.operation_content_id = operation_content_id;
+    if (animal_type_id) where.animal_type_id = animal_type_id;
+    if (handler_id) where.handler_id = handler_id;
+    if (order_sn) where.order_sn = order_sn;
+    if (reservation_date) {
+      where[Op.and] = db.sequelize.literal(
+        `JSON_SEARCH(time_slots, 'one', '${reservation_date}%', NULL, '$[*]') IS NOT NULL`
+      );
+    } else if (start_date || end_date) {
+      const conditions = [];
+      if (start_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${start_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (end_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${end_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (conditions.length > 0) {
+        where[Op.and] = db.sequelize.literal(conditions.join(' OR '));
+      }
+    }
+
+    const userWhere = {};
+    let hasUserWhere = false;
+    if (user_name) {
+      userWhere.name = { [Op.like]: `%${user_name}%` };
+      hasUserWhere = true;
+    }
+    if (user_phone) {
+      userWhere.phone = { [Op.like]: `%${user_phone}%` };
+      hasUserWhere = true;
+    }
+
+    const rows = await db.ExperimentOperation.findAll({
+      where,
+      include: [
+        { model: db.OperationContent, as: 'operation_content', attributes: ['id', 'name'] },
+        { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['id', 'name', 'phone'],
+          where: hasUserWhere ? userWhere : undefined,
+          required: hasUserWhere
+        },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    return rows.map(operation => {
+      const data = operation.toJSON();
+      if (data.auditBy) {
+        data.audit_by = data.auditBy;
+        delete data.auditBy;
+      }
+      return data;
+    });
+  } catch (error) {
+    logger.error('Export experiment operation list failed:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   // 订单管理
   getOperationList,
@@ -705,6 +793,7 @@ module.exports = {
   auditOperation,
   completeOperation,
   cancelOperation,
+  exportOperationList,
   
   // 操作内容管理
   getOperationContentList,

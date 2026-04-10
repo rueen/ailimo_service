@@ -1162,6 +1162,85 @@ const getPurposeOptions = async () => {
 };
 
 
+/**
+ * 导出笼位预约订单列表（不分页）
+ * @param {Object} params - 查询参数（同 getReservationList，忽略 page/pageSize）
+ * @returns {Promise<Array>}
+ */
+const exportReservationList = async (params) => {
+  try {
+    const {
+      cage_id,
+      user_id,
+      user_name,
+      user_phone,
+      status,
+      reservation_date,
+      start_date,
+      end_date,
+      animal_type_id,
+      environment_id,
+      purpose_id,
+      order_sn,
+    } = params;
+
+    const where = {};
+    if (cage_id) where.cage_id = cage_id;
+    if (user_id) where.user_id = user_id;
+    if (status !== undefined) where.status = status;
+    if (animal_type_id) where.animal_type_id = animal_type_id;
+    if (environment_id) where.environment_id = environment_id;
+    if (purpose_id) where.purpose_id = purpose_id;
+    if (order_sn) where.order_sn = order_sn;
+    if (reservation_date) {
+      where.start_date = reservation_date;
+    } else if (start_date && end_date) {
+      where.start_date = { [Op.between]: [start_date, end_date] };
+    } else if (start_date) {
+      where.start_date = { [Op.gte]: start_date };
+    } else if (end_date) {
+      where.start_date = { [Op.lte]: end_date };
+    }
+
+    const userWhere = {};
+    let hasUserWhere = false;
+    if (user_name) {
+      userWhere.name = { [Op.like]: `%${user_name}%` };
+      hasUserWhere = true;
+    }
+    if (user_phone) {
+      userWhere.phone = { [Op.like]: `%${user_phone}%` };
+      hasUserWhere = true;
+    }
+
+    const rows = await db.CageReservation.findAll({
+      where,
+      include: [
+        { model: db.Cage, as: 'cage', attributes: ['id', 'quantity'] },
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['id', 'name', 'phone'],
+          where: hasUserWhere ? userWhere : undefined,
+          required: hasUserWhere
+        },
+        { model: db.AnimalType, as: 'animal_type', attributes: ['id', 'name'] },
+        { model: db.EnvironmentType, as: 'environment', attributes: ['id', 'name'] },
+        { model: db.CageRoom, as: 'room', attributes: ['id', 'name'], required: false },
+        { model: db.CagePurpose, as: 'purpose', attributes: ['id', 'name'] },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    return rows;
+  } catch (error) {
+    logger.error('Export cage reservation list failed:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   // 笼位管理
   getCageList,
@@ -1172,7 +1251,7 @@ module.exports = {
   getEnvironmentsByAnimalType,
   getRoomsByAnimalTypeAndEnvironment,
   getCageAvailableQuantity,
-  
+
   // 订单管理
   getReservationList,
   getReservationDetail,
@@ -1181,7 +1260,8 @@ module.exports = {
   auditReservation,
   completeReservation,
   cancelReservation,
-  
+  exportReservationList,
+
   // 用途管理
   getPurposeList,
   getPurposeOptions,

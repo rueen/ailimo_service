@@ -385,6 +385,18 @@ const getRequirementOptions = async (req, res, next) => {
   }
 };
 
+/**
+ * 导出动物订单列表
+ */
+const exportOrderList = async (req, res, next) => {
+  try {
+    const list = await animalOrderService.exportOrderList(req.query);
+    return response.success(res, list);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   // 订单管理
   getOrderList,
@@ -394,7 +406,8 @@ module.exports = {
   auditOrder,
   completeOrder,
   cancelOrder,
-  
+  exportOrderList,
+
   // 品牌管理
   getBrandList,
   getBrandOptions,

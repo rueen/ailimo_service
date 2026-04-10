@@ -284,6 +284,18 @@ const getAvailableSlots = async (req, res, next) => {
   }
 };
 
+/**
+ * 导出设备预约订单列表
+ */
+const exportReservationList = async (req, res, next) => {
+  try {
+    const list = await equipmentService.exportReservationList(req.query);
+    return response.success(res, list);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getEquipmentList,
   getEquipmentDetail,
@@ -298,6 +310,7 @@ module.exports = {
   auditReservation,
   completeReservation,
   cancelReservation,
+  exportReservationList,
   getTimeSlotList,
   getTimeSlotOptions,
   createTimeSlot,

@@ -108,6 +108,18 @@ const cancelOrder = async (req, res, next) => {
 };
 
 
+/**
+ * 导出试剂耗材订单列表
+ */
+const exportOrderList = async (req, res, next) => {
+  try {
+    const list = await reagentOrderService.exportOrderList(req.query);
+    return response.success(res, list);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   // 订单管理
   getOrderList,
@@ -116,5 +128,6 @@ module.exports = {
   updateOrder,
   auditOrder,
   completeOrder,
-  cancelOrder
+  cancelOrder,
+  exportOrderList
 };

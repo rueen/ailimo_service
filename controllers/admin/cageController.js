@@ -318,6 +318,18 @@ const getPurposeOptions = async (req, res, next) => {
 };
 
 
+/**
+ * 导出笼位预约订单列表
+ */
+const exportReservationList = async (req, res, next) => {
+  try {
+    const list = await cageService.exportReservationList(req.query);
+    return response.success(res, list);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   // 笼位管理
   getCageList,
@@ -337,6 +349,7 @@ module.exports = {
   auditReservation,
   completeReservation,
   cancelReservation,
+  exportReservationList,
   
   // 用途管理
   getPurposeList,

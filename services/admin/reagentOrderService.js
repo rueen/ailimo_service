@@ -311,6 +311,63 @@ const cancelOrder = async (id) => {
 };
 
 
+/**
+ * 导出试剂耗材订单列表（不分页）
+ * @param {Object} params - 查询参数（同 getOrderList，忽略 page/pageSize）
+ * @returns {Promise<Array>}
+ */
+const exportOrderList = async (params) => {
+  try {
+    const {
+      user_id,
+      status,
+      brand_name,
+      specification_name,
+      start_date,
+      end_date,
+      keyword,
+      order_sn
+    } = params;
+
+    const where = {};
+    if (user_id) where.user_id = user_id;
+    if (status !== undefined) where.status = status;
+    if (brand_name) where.brand_name = { [Op.like]: `%${brand_name}%` };
+    if (specification_name) where.specification_name = { [Op.like]: `%${specification_name}%` };
+    if (keyword) where.name = { [Op.like]: `%${keyword}%` };
+    if (start_date && end_date) {
+      where.delivery_date = { [Op.between]: [start_date, end_date] };
+    } else if (start_date) {
+      where.delivery_date = { [Op.gte]: start_date };
+    } else if (end_date) {
+      where.delivery_date = { [Op.lte]: end_date };
+    }
+    if (order_sn) where.order_sn = order_sn;
+
+    const rows = await db.ReagentOrder.findAll({
+      where,
+      include: [
+        { model: db.User, as: 'user', attributes: ['id', 'name', 'phone'] },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    return rows.map(order => {
+      const data = order.toJSON();
+      if (data.auditBy) {
+        data.audit_by = data.auditBy;
+        delete data.auditBy;
+      }
+      return data;
+    });
+  } catch (error) {
+    logger.error('Export reagent order list failed:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   // 订单管理
   getOrderList,
@@ -319,5 +376,6 @@ module.exports = {
   updateOrder,
   auditOrder,
   completeOrder,
-  cancelOrder
+  cancelOrder,
+  exportOrderList
 };

@@ -85,6 +85,7 @@ router.put('/equipment/:id', adminAuth, permission('equipment:update'), equipmen
 router.delete('/equipment/:id', adminAuth, permission('equipment:delete'), equipmentController.deleteEquipment);
 
 // 设备预约订单
+router.get('/equipment-reservations/export', adminAuth, permission('equipment_reservation:list'), equipmentController.exportReservationList);
 router.get('/equipment-reservations', adminAuth, permission('equipment_reservation:list'), equipmentController.getReservationList);
 router.get('/equipment-reservations/:id', adminAuth, permission('equipment_reservation:detail'), equipmentController.getReservationDetail);
 router.post('/equipment-reservations', adminAuth, permission('equipment_reservation:create'), equipmentController.createReservation);
@@ -114,6 +115,7 @@ router.put('/cages/:id', adminAuth, permission('cage:update'), cageController.up
 router.delete('/cages/:id', adminAuth, permission('cage:delete'), cageController.deleteCage);
 
 // 笼位预约订单
+router.get('/cage-reservations/export', adminAuth, permission('cage_reservation:list'), cageController.exportReservationList);
 router.get('/cage-reservations', adminAuth, permission('cage_reservation:list'), cageController.getReservationList);
 router.get('/cage-reservations/:id', adminAuth, permission('cage_reservation:detail'), cageController.getReservationDetail);
 router.post('/cage-reservations', adminAuth, permission('cage_reservation:create'), cageController.createReservation);
@@ -131,6 +133,7 @@ router.delete('/cage-purposes/:id', adminAuth, permission('cage_purpose:delete')
 
 // ==================== 实验代操作 ====================
 // 实验操作订单
+router.get('/experiment-operations/export', adminAuth, permission('experiment_operation:list'), experimentController.exportOperationList);
 router.get('/experiment-operations', adminAuth, permission('experiment_operation:list'), experimentController.getOperationList);
 router.get('/experiment-operations/statistics', adminAuth, permission('experiment_operation:statistics'), statisticsController.getExperimentOperationStatistics);
 router.get('/experiment-operations/:id', adminAuth, permission('experiment_operation:detail'), experimentController.getOperationDetail);
@@ -156,6 +159,7 @@ router.delete('/experiment-time-slots/:id', adminAuth, permission('experiment_ti
 
 // ==================== 动物订购 ====================
 // 动物订单
+router.get('/animal-orders/export', adminAuth, permission('animal_order:list'), animalOrderController.exportOrderList);
 router.get('/animal-orders', adminAuth, permission('animal_order:list'), animalOrderController.getOrderList);
 router.get('/animal-orders/:id', adminAuth, permission('animal_order:detail'), animalOrderController.getOrderDetail);
 router.post('/animal-orders', adminAuth, permission('animal_order:create'), animalOrderController.createOrder);
@@ -194,6 +198,7 @@ router.delete('/animal-requirements/:id', adminAuth, permission('animal_requirem
 
 // ==================== 试剂耗材订购 ====================
 // 试剂订单
+router.get('/reagent-orders/export', adminAuth, permission('reagent_order:list'), reagentOrderController.exportOrderList);
 router.get('/reagent-orders', adminAuth, permission('reagent_order:list'), reagentOrderController.getOrderList);
 router.get('/reagent-orders/:id', adminAuth, permission('reagent_order:detail'), reagentOrderController.getOrderDetail);
 router.post('/reagent-orders', adminAuth, permission('reagent_order:create'), reagentOrderController.createOrder);

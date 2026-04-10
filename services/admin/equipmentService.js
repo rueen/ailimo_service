@@ -794,6 +794,98 @@ const getAvailableSlots = async (equipmentId, date) => {
   }
 };
 
+/**
+ * 导出设备预约订单列表（不分页）
+ * @param {Object} params - 查询参数（同 getReservationList，忽略 page/pageSize）
+ * @returns {Promise<Array>}
+ */
+const exportReservationList = async (params) => {
+  try {
+    const {
+      equipment_id,
+      equipment_name,
+      user_id,
+      user_name,
+      user_phone,
+      status,
+      reservation_date,
+      start_date,
+      end_date,
+      order_sn,
+    } = params;
+
+    const where = {};
+    if (equipment_id) where.equipment_id = equipment_id;
+    if (user_id) where.user_id = user_id;
+    if (status !== undefined) where.status = status;
+    if (order_sn) where.order_sn = order_sn;
+    if (reservation_date) {
+      where[Op.and] = db.sequelize.literal(
+        `JSON_SEARCH(time_slots, 'one', '${reservation_date}%', NULL, '$[*]') IS NOT NULL`
+      );
+    } else if (start_date || end_date) {
+      const conditions = [];
+      if (start_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${start_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (end_date) {
+        conditions.push(`JSON_SEARCH(time_slots, 'one', '${end_date}%', NULL, '$[*]') IS NOT NULL`);
+      }
+      if (conditions.length > 0) {
+        where[Op.and] = db.sequelize.literal(conditions.join(' OR '));
+      }
+    }
+
+    const equipmentWhere = {};
+    if (equipment_name) {
+      equipmentWhere.name = { [Op.like]: `%${equipment_name}%` };
+    }
+
+    const userWhere = {};
+    if (user_name) {
+      userWhere.name = { [Op.like]: `%${user_name}%` };
+    }
+    if (user_phone) {
+      userWhere.phone = { [Op.like]: `%${user_phone}%` };
+    }
+
+    const rows = await db.EquipmentReservation.findAll({
+      where,
+      include: [
+        {
+          model: db.Equipment,
+          as: 'equipment',
+          attributes: ['id', 'name'],
+          where: Object.keys(equipmentWhere).length > 0 ? equipmentWhere : undefined,
+          required: Object.keys(equipmentWhere).length > 0
+        },
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['id', 'name', 'phone'],
+          where: Object.keys(userWhere).length > 0 ? userWhere : undefined,
+          required: Object.keys(userWhere).length > 0
+        },
+        { model: db.Handler, as: 'handler', attributes: ['id', 'name'] },
+        { model: db.Administrator, as: 'auditBy', attributes: ['id', 'username'] }
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    return rows.map(reservation => {
+      const data = reservation.toJSON();
+      if (data.auditBy) {
+        data.audit_by = data.auditBy;
+        delete data.auditBy;
+      }
+      return data;
+    });
+  } catch (err) {
+    logger.error(`Export equipment reservation list failed: ${err.message}`);
+    throw err;
+  }
+};
+
 module.exports = {
   getEquipmentList,
   getEquipmentDetail,
@@ -808,6 +900,7 @@ module.exports = {
   auditReservation,
   completeReservation,
   cancelReservation,
+  exportReservationList,
   getTimeSlotList,
   getTimeSlotOptions,
   createTimeSlot,
