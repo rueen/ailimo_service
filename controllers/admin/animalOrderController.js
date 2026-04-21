@@ -84,6 +84,28 @@ const auditOrder = async (req, res, next) => {
 };
 
 /**
+ * 批量审核动物订单
+ */
+const batchAuditOrders = async (req, res, next) => {
+  try {
+    const { ids, status, reject_reason, handler_id } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return response.badRequest(res, '请提供要审核的订单ID列表');
+    }
+    const result = await animalOrderService.batchAuditOrders(
+      ids,
+      Number(status),
+      reject_reason,
+      handler_id,
+      req.userId
+    );
+    return response.success(res, result, `批量审核完成，成功 ${result.success_count} 条`);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 完成动物订单
  */
 const completeOrder = async (req, res, next) => {
@@ -404,6 +426,7 @@ module.exports = {
   createOrder,
   updateOrder,
   auditOrder,
+  batchAuditOrders,
   completeOrder,
   cancelOrder,
   exportOrderList,

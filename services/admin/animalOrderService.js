@@ -269,6 +269,34 @@ const auditOrder = async (id, status, rejectReason, handlerId, adminId) => {
 };
 
 /**
+ * 批量审核动物订单
+ * @param {Number[]} ids - 订单ID列表
+ * @param {Number} status - 审核状态（1=通过，2=拒绝）
+ * @param {String} rejectReason - 拒绝原因
+ * @param {Number} handlerId - 负责人ID
+ * @param {Number} adminId - 审核管理员ID
+ * @returns {Promise<{success_count: number, failed_ids: number[]}>}
+ */
+const batchAuditOrders = async (ids, status, rejectReason, handlerId, adminId) => {
+  const results = await Promise.allSettled(
+    ids.map(id => auditOrder(id, status, rejectReason, handlerId, adminId))
+  );
+
+  const failedIds = [];
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      failedIds.push(ids[index]);
+      logger.warn(`Batch audit animal order failed: id=${ids[index]}, reason=${result.reason?.message}`);
+    }
+  });
+
+  const successCount = ids.length - failedIds.length;
+  logger.info(`Batch audit animal orders: total=${ids.length}, success=${successCount}`);
+
+  return { success_count: successCount, failed_ids: failedIds };
+};
+
+/**
  * 完成动物订单
  * @param {Number} id - 订单ID
  * @returns {Promise<void>}
@@ -953,6 +981,7 @@ module.exports = {
   createOrder,
   updateOrder,
   auditOrder,
+  batchAuditOrders,
   completeOrder,
   cancelOrder,
   exportOrderList,

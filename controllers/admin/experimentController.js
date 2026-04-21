@@ -84,6 +84,28 @@ const auditOperation = async (req, res, next) => {
 };
 
 /**
+ * 批量审核实验操作订单
+ */
+const batchAuditOperations = async (req, res, next) => {
+  try {
+    const { ids, status, reject_reason, handler_id } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return response.badRequest(res, '请提供要审核的订单ID列表');
+    }
+    const result = await experimentService.batchAuditOperations(
+      ids,
+      Number(status),
+      reject_reason,
+      handler_id,
+      req.userId
+    );
+    return response.success(res, result, `批量审核完成，成功 ${result.success_count} 条`);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 完成实验操作订单
  */
 const completeOperation = async (req, res, next) => {
@@ -270,6 +292,7 @@ module.exports = {
   createOperation,
   updateOperation,
   auditOperation,
+  batchAuditOperations,
   completeOperation,
   cancelOperation,
   exportOperationList,

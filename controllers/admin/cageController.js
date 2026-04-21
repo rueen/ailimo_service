@@ -225,6 +225,28 @@ const auditReservation = async (req, res, next) => {
 };
 
 /**
+ * 批量审核笼位预约订单
+ */
+const batchAuditReservations = async (req, res, next) => {
+  try {
+    const { ids, status, reject_reason, handler_id } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return response.badRequest(res, '请提供要审核的订单ID列表');
+    }
+    const result = await cageService.batchAuditReservations(
+      ids,
+      Number(status),
+      reject_reason,
+      handler_id,
+      req.userId
+    );
+    return response.success(res, result, `批量审核完成，成功 ${result.success_count} 条`);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * 完成预约订单
  */
 const completeReservation = async (req, res, next) => {
@@ -347,6 +369,7 @@ module.exports = {
   createReservation,
   updateReservation,
   auditReservation,
+  batchAuditReservations,
   completeReservation,
   cancelReservation,
   exportReservationList,

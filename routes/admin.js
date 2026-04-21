@@ -90,6 +90,7 @@ router.get('/equipment-reservations', adminAuth, permission('equipment_reservati
 router.get('/equipment-reservations/:id', adminAuth, permission('equipment_reservation:detail'), equipmentController.getReservationDetail);
 router.post('/equipment-reservations', adminAuth, permission('equipment_reservation:create'), equipmentController.createReservation);
 router.put('/equipment-reservations/:id', adminAuth, permission('equipment_reservation:update'), equipmentController.updateReservation);
+router.post('/equipment-reservations/batch-audit', adminAuth, permission('equipment_reservation:audit'), equipmentController.batchAuditReservations);
 router.put('/equipment-reservations/:id/audit', adminAuth, permission('equipment_reservation:audit'), equipmentController.auditReservation);
 router.put('/equipment-reservations/:id/complete', adminAuth, permission('equipment_reservation:complete'), equipmentController.completeReservation);
 router.put('/equipment-reservations/:id/cancel', adminAuth, permission('equipment_reservation:cancel'), equipmentController.cancelReservation);
@@ -120,6 +121,7 @@ router.get('/cage-reservations', adminAuth, permission('cage_reservation:list'),
 router.get('/cage-reservations/:id', adminAuth, permission('cage_reservation:detail'), cageController.getReservationDetail);
 router.post('/cage-reservations', adminAuth, permission('cage_reservation:create'), cageController.createReservation);
 router.put('/cage-reservations/:id', adminAuth, permission('cage_reservation:update'), cageController.updateReservation);
+router.post('/cage-reservations/batch-audit', adminAuth, permission('cage_reservation:audit'), cageController.batchAuditReservations);
 router.put('/cage-reservations/:id/audit', adminAuth, permission('cage_reservation:audit'), cageController.auditReservation);
 router.put('/cage-reservations/:id/complete', adminAuth, permission('cage_reservation:complete'), cageController.completeReservation);
 router.put('/cage-reservations/:id/cancel', adminAuth, permission('cage_reservation:cancel'), cageController.cancelReservation);
@@ -139,6 +141,7 @@ router.get('/experiment-operations/statistics', adminAuth, permission('experimen
 router.get('/experiment-operations/:id', adminAuth, permission('experiment_operation:detail'), experimentController.getOperationDetail);
 router.post('/experiment-operations', adminAuth, permission('experiment_operation:create'), experimentController.createOperation);
 router.put('/experiment-operations/:id', adminAuth, permission('experiment_operation:update'), experimentController.updateOperation);
+router.post('/experiment-operations/batch-audit', adminAuth, permission('experiment_operation:audit'), experimentController.batchAuditOperations);
 router.put('/experiment-operations/:id/audit', adminAuth, permission('experiment_operation:audit'), experimentController.auditOperation);
 router.put('/experiment-operations/:id/complete', adminAuth, permission('experiment_operation:complete'), experimentController.completeOperation);
 router.put('/experiment-operations/:id/cancel', adminAuth, permission('experiment_operation:cancel'), experimentController.cancelOperation);
@@ -164,6 +167,7 @@ router.get('/animal-orders', adminAuth, permission('animal_order:list'), animalO
 router.get('/animal-orders/:id', adminAuth, permission('animal_order:detail'), animalOrderController.getOrderDetail);
 router.post('/animal-orders', adminAuth, permission('animal_order:create'), animalOrderController.createOrder);
 router.put('/animal-orders/:id', adminAuth, permission('animal_order:update'), animalOrderController.updateOrder);
+router.post('/animal-orders/batch-audit', adminAuth, permission('animal_order:audit'), animalOrderController.batchAuditOrders);
 router.put('/animal-orders/:id/audit', adminAuth, permission('animal_order:audit'), animalOrderController.auditOrder);
 router.put('/animal-orders/:id/complete', adminAuth, permission('animal_order:complete'), animalOrderController.completeOrder);
 router.put('/animal-orders/:id/cancel', adminAuth, permission('animal_order:cancel'), animalOrderController.cancelOrder);
@@ -203,6 +207,7 @@ router.get('/reagent-orders', adminAuth, permission('reagent_order:list'), reage
 router.get('/reagent-orders/:id', adminAuth, permission('reagent_order:detail'), reagentOrderController.getOrderDetail);
 router.post('/reagent-orders', adminAuth, permission('reagent_order:create'), reagentOrderController.createOrder);
 router.put('/reagent-orders/:id', adminAuth, permission('reagent_order:update'), reagentOrderController.updateOrder);
+router.post('/reagent-orders/batch-audit', adminAuth, permission('reagent_order:audit'), reagentOrderController.batchAuditOrders);
 router.put('/reagent-orders/:id/audit', adminAuth, permission('reagent_order:audit'), reagentOrderController.auditOrder);
 router.put('/reagent-orders/:id/complete', adminAuth, permission('reagent_order:complete'), reagentOrderController.completeOrder);
 router.put('/reagent-orders/:id/cancel', adminAuth, permission('reagent_order:cancel'), reagentOrderController.cancelOrder);
