@@ -103,7 +103,12 @@ const getOperationList = async (params) => {
       ],
       offset,
       limit: parseInt(pageSize),
-      order: [['created_at', 'DESC']],
+      // 状态优先（待审核=0、进行中=1 排前），再按预约最早时间升序（临近优先），最后按创建时间降序
+      order: [
+        [db.sequelize.literal('CASE WHEN `ExperimentOperation`.`status` IN (0, 1) THEN 0 ELSE 1 END'), 'ASC'],
+        [db.sequelize.literal('JSON_UNQUOTE(JSON_EXTRACT(`ExperimentOperation`.`time_slots`, \'$[0]\'))'), 'ASC'],
+        ['created_at', 'DESC']
+      ],
       // 当在 include 中使用 where 条件时，需要添加 distinct 来确保正确计数
       distinct: true,
       col: 'id'
