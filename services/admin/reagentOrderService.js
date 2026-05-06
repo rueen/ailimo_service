@@ -67,10 +67,10 @@ const getOrderList = async (params) => {
       ],
       offset,
       limit: parseInt(pageSize),
-      // 状态优先（待审核=0、进行中=1 排前），再按到货日期升序（临近优先），最后按创建时间降序
+      // 状态优先（待审核=0、进行中=1 排前）；活跃订单按到货日期升序（临近优先）；非活跃订单不参与日期排序，回退到创建时间降序
       order: [
         [db.sequelize.literal('CASE WHEN `ReagentOrder`.`status` IN (0, 1) THEN 0 ELSE 1 END'), 'ASC'],
-        ['delivery_date', 'ASC'],
+        [db.sequelize.literal('CASE WHEN `ReagentOrder`.`status` IN (0, 1) THEN `ReagentOrder`.`delivery_date` ELSE NULL END'), 'ASC'],
         ['created_at', 'DESC']
       ]
     });

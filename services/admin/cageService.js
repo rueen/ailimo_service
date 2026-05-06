@@ -471,10 +471,10 @@ const getReservationList = async (params) => {
       ],
       offset,
       limit: parseInt(pageSize),
-      // 状态优先（待审核=0、进行中=1 排前），再按预约开始日期升序（临近优先），最后按创建时间降序
+      // 状态优先（待审核=0、进行中=1 排前）；活跃订单按预约开始日期升序（临近优先）；非活跃订单不参与日期排序，回退到创建时间降序
       order: [
         [db.sequelize.literal('CASE WHEN `CageReservation`.`status` IN (0, 1) THEN 0 ELSE 1 END'), 'ASC'],
-        ['start_date', 'ASC'],
+        [db.sequelize.literal('CASE WHEN `CageReservation`.`status` IN (0, 1) THEN `CageReservation`.`start_date` ELSE NULL END'), 'ASC'],
         ['created_at', 'DESC']
       ],
       // 当在 include 中使用 where 条件时，需要添加 distinct 来确保正确计数
